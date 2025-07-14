@@ -537,7 +537,12 @@ export const StudentForm: React.FC<StudentFormProps> = ({
                 <Label htmlFor="discount_type">Discount Type</Label>
                 <Select
                   value={formData.discount_type || 'no-discount'}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, discount_type: value === 'no-discount' ? null : value }))}
+                  onValueChange={(value) => setFormData(prev => ({ 
+                    ...prev, 
+                    discount_type: value === 'no-discount' ? null : value,
+                    // Reset discount percentage when changing type
+                    discount_percentage: value === 'no-discount' ? null : prev.discount_percentage
+                  }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select discount type" />

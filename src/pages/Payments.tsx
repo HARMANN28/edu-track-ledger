@@ -140,8 +140,8 @@ export const Payments: React.FC = () => {
     try {
       const paymentData = {
         ...formData,
-        student_id: editingPayment?.student_id || Date.now().toString(),
-        receipt_number: editingPayment?.receipt_number || `RCP${String(payments.length + 1).padStart(3, '0')}`,
+        student_id: editingPayment?.student_id || `student_${Date.now()}`, // This should be a real student ID in production
+        // Let database generate receipt_number automatically
       };
 
       if (editingPayment) {

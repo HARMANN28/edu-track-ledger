@@ -1,4 +1,5 @@
 import React from 'react';
+import { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ import {
   Clock,
   ArrowUpRight,
 } from 'lucide-react';
+import { useSupabase } from '@/hooks/useSupabase';
 
 
 const getStatusBadge = (status: string) => {
@@ -28,6 +30,8 @@ const getStatusBadge = (status: string) => {
 };
 
 export const Dashboard: React.FC = () => {
+  const { getStudents, getPayments, loading } = useSupabase();
+  
   const [stats, setStats] = React.useState([
     {
       title: 'Total Students',
@@ -68,6 +72,96 @@ export const Dashboard: React.FC = () => {
   ]);
 
   const [recentPayments, setRecentPayments] = React.useState<any[]>([]);
+
+  const fetchDashboardData = async () => {
+    try {
+      const [studentsData, paymentsData] = await Promise.all([
+        getStudents(),
+        getPayments()
+      ]);
+
+      // Calculate stats from real data
+      const activeStudents = studentsData.filter(s => s.status === 'active').length;
+      const thisMonthPayments = paymentsData.filter(p => {
+        const paymentDate = new Date(p.payment_date);
+        const now = new Date();
+        return paymentDate.getMonth() === now.getMonth() && 
+               paymentDate.getFullYear() === now.getFullYear() &&
+               p.status === 'paid';
+      });
+      
+      const totalRevenue = thisMonthPayments.reduce((sum, p) => sum + p.amount, 0);
+      const pendingPayments = paymentsData.filter(p => p.status === 'pending');
+      const pendingAmount = pendingPayments.reduce((sum, p) => sum + p.amount, 0);
+      
+      const todayPayments = paymentsData.filter(p => {
+        const paymentDate = new Date(p.payment_date);
+        const today = new Date();
+        return paymentDate.toDateString() === today.toDateString() && p.status === 'paid';
+      });
+      const todayAmount = todayPayments.reduce((sum, p) => sum + p.amount, 0);
+
+      setStats([
+        {
+          title: 'Total Students',
+          value: activeStudents.toString(),
+          description: 'Active students',
+          icon: Users,
+          trend: '0%',
+          color: 'text-primary',
+          bgColor: 'bg-primary/10',
+        },
+        {
+          title: 'Total Revenue',
+          value: `₹${totalRevenue.toLocaleString()}`,
+          description: 'This month',
+          icon: DollarSign,
+          trend: '0%',
+          color: 'text-success',
+          bgColor: 'bg-success/10',
+        },
+        {
+          title: 'Pending Payments',
+          value: `₹${pendingAmount.toLocaleString()}`,
+          description: 'Outstanding dues',
+          icon: Clock,
+          trend: '0%',
+          color: 'text-warning',
+          bgColor: 'bg-warning/10',
+        },
+        {
+          title: 'Collections Today',
+          value: `₹${todayAmount.toLocaleString()}`,
+          description: `${todayPayments.length} transactions`,
+          icon: CreditCard,
+          trend: '0%',
+          color: 'text-success',
+          bgColor: 'bg-success/10',
+        },
+      ]);
+
+      // Set recent payments (last 5)
+      const recent = paymentsData
+        .sort((a, b) => new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime())
+        .slice(0, 5)
+        .map(p => ({
+          id: p.id,
+          student: p.student_name,
+          class: p.class,
+          amount: `₹${p.amount.toLocaleString()}`,
+          time: new Date(p.payment_date).toLocaleDateString(),
+          status: p.status
+        }));
+      
+      setRecentPayments(recent);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
   return (
     <div className="space-y-6">
