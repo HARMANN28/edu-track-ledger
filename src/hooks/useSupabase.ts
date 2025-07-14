@@ -32,9 +32,11 @@ export const useSupabase = () => {
   const createStudent = async (studentData: any) => {
     setLoading(true);
     try {
+      // Remove user_id from studentData as it will be set by trigger
+      const { user_id, ...dataWithoutUserId } = studentData;
       const { data, error } = await supabase
         .from('students')
-        .insert([studentData])
+        .insert([dataWithoutUserId])
         .select()
         .single();
       
@@ -61,9 +63,11 @@ export const useSupabase = () => {
   const updateStudent = async (id: string, studentData: any) => {
     setLoading(true);
     try {
+      // Remove user_id from studentData for updates
+      const { user_id, ...dataWithoutUserId } = studentData;
       const { data, error } = await supabase
         .from('students')
-        .update(studentData)
+        .update(dataWithoutUserId)
         .eq('id', id)
         .select()
         .single();
@@ -142,9 +146,11 @@ export const useSupabase = () => {
   const createFeeStructure = async (feeData: any) => {
     setLoading(true);
     try {
+      // Remove user_id from feeData as it will be set by trigger
+      const { user_id, ...dataWithoutUserId } = feeData;
       const { data, error } = await supabase
         .from('fee_structures')
-        .insert([feeData])
+        .insert([dataWithoutUserId])
         .select()
         .single();
       
@@ -171,9 +177,11 @@ export const useSupabase = () => {
   const updateFeeStructure = async (id: string, feeData: any) => {
     setLoading(true);
     try {
+      // Remove user_id from feeData for updates
+      const { user_id, ...dataWithoutUserId } = feeData;
       const { data, error } = await supabase
         .from('fee_structures')
-        .update(feeData)
+        .update(dataWithoutUserId)
         .eq('id', id)
         .select()
         .single();
@@ -252,9 +260,11 @@ export const useSupabase = () => {
   const createPayment = async (paymentData: any) => {
     setLoading(true);
     try {
+      // Remove user_id from paymentData as it will be set by trigger
+      const { user_id, ...dataWithoutUserId } = paymentData;
       const { data, error } = await supabase
         .from('payments')
-        .insert([paymentData])
+        .insert([dataWithoutUserId])
         .select()
         .single();
       
@@ -281,9 +291,11 @@ export const useSupabase = () => {
   const updatePayment = async (id: string, paymentData: any) => {
     setLoading(true);
     try {
+      // Remove user_id from paymentData for updates
+      const { user_id, ...dataWithoutUserId } = paymentData;
       const { data, error } = await supabase
         .from('payments')
-        .update(paymentData)
+        .update(dataWithoutUserId)
         .eq('id', id)
         .select()
         .single();
@@ -362,9 +374,11 @@ export const useSupabase = () => {
   const createDiscountType = async (discountData: any) => {
     setLoading(true);
     try {
+      // Remove user_id from discountData as it will be set by trigger
+      const { user_id, ...dataWithoutUserId } = discountData;
       const { data, error } = await supabase
         .from('discount_types')
-        .insert([discountData])
+        .insert([dataWithoutUserId])
         .select()
         .single();
       
@@ -391,9 +405,11 @@ export const useSupabase = () => {
   const updateDiscountType = async (id: string, discountData: any) => {
     setLoading(true);
     try {
+      // Remove user_id from discountData for updates
+      const { user_id, ...dataWithoutUserId } = discountData;
       const { data, error } = await supabase
         .from('discount_types')
-        .update(discountData)
+        .update(dataWithoutUserId)
         .eq('id', id)
         .select()
         .single();

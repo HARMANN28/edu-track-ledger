@@ -13,51 +13,6 @@ import {
   ArrowUpRight,
 } from 'lucide-react';
 
-const stats = [
-  {
-    title: 'Total Students',
-    value: '1,247',
-    description: 'Active students',
-    icon: Users,
-    trend: '+2.5%',
-    color: 'text-primary',
-    bgColor: 'bg-primary/10',
-  },
-  {
-    title: 'Total Revenue',
-    value: '₹8,45,230',
-    description: 'This month',
-    icon: DollarSign,
-    trend: '+12.3%',
-    color: 'text-success',
-    bgColor: 'bg-success/10',
-  },
-  {
-    title: 'Pending Payments',
-    value: '₹1,23,450',
-    description: 'Outstanding dues',
-    icon: Clock,
-    trend: '-8.1%',
-    color: 'text-warning',
-    bgColor: 'bg-warning/10',
-  },
-  {
-    title: 'Collections Today',
-    value: '₹25,680',
-    description: '45 transactions',
-    icon: CreditCard,
-    trend: '+5.2%',
-    color: 'text-success',
-    bgColor: 'bg-success/10',
-  },
-];
-
-const recentPayments = [
-  { id: '1', student: 'Rajesh Kumar', class: '10-A', amount: '₹5,000', status: 'paid', time: '2 hours ago' },
-  { id: '2', student: 'Priya Sharma', class: '9-B', amount: '₹4,500', status: 'pending', time: '3 hours ago' },
-  { id: '3', student: 'Amit Singh', class: '11-C', amount: '₹5,500', status: 'paid', time: '5 hours ago' },
-  { id: '4', student: 'Sneha Patel', class: '8-A', amount: '₹4,000', status: 'overdue', time: '1 day ago' },
-];
 
 const getStatusBadge = (status: string) => {
   switch (status) {
@@ -73,6 +28,47 @@ const getStatusBadge = (status: string) => {
 };
 
 export const Dashboard: React.FC = () => {
+  const [stats, setStats] = React.useState([
+    {
+      title: 'Total Students',
+      value: '0',
+      description: 'Active students',
+      icon: Users,
+      trend: '0%',
+      color: 'text-primary',
+      bgColor: 'bg-primary/10',
+    },
+    {
+      title: 'Total Revenue',
+      value: '₹0',
+      description: 'This month',
+      icon: DollarSign,
+      trend: '0%',
+      color: 'text-success',
+      bgColor: 'bg-success/10',
+    },
+    {
+      title: 'Pending Payments',
+      value: '₹0',
+      description: 'Outstanding dues',
+      icon: Clock,
+      trend: '0%',
+      color: 'text-warning',
+      bgColor: 'bg-warning/10',
+    },
+    {
+      title: 'Collections Today',
+      value: '₹0',
+      description: '0 transactions',
+      icon: CreditCard,
+      trend: '0%',
+      color: 'text-success',
+      bgColor: 'bg-success/10',
+    },
+  ]);
+
+  const [recentPayments, setRecentPayments] = React.useState<any[]>([]);
+
   return (
     <div className="space-y-6">
       <div>
@@ -117,23 +113,30 @@ export const Dashboard: React.FC = () => {
             <CardDescription>Latest fee transactions and payments</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {recentPayments.map((payment) => (
-                <div key={payment.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                  <div className="space-y-1">
-                    <p className="font-medium text-foreground">{payment.student}</p>
-                    <p className="text-sm text-muted-foreground">Class {payment.class}</p>
+            {recentPayments.length > 0 ? (
+              <div className="space-y-4">
+                {recentPayments.map((payment) => (
+                  <div key={payment.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <div className="space-y-1">
+                      <p className="font-medium text-foreground">{payment.student}</p>
+                      <p className="text-sm text-muted-foreground">Class {payment.class}</p>
+                    </div>
+                    <div className="text-right space-y-1">
+                      <p className="font-medium text-foreground">{payment.amount}</p>
+                      <p className="text-xs text-muted-foreground">{payment.time}</p>
+                    </div>
+                    <div className="ml-4">
+                      {getStatusBadge(payment.status)}
+                    </div>
                   </div>
-                  <div className="text-right space-y-1">
-                    <p className="font-medium text-foreground">{payment.amount}</p>
-                    <p className="text-xs text-muted-foreground">{payment.time}</p>
-                  </div>
-                  <div className="ml-4">
-                    {getStatusBadge(payment.status)}
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">No recent payments found.</p>
+                <p className="text-sm text-muted-foreground mt-1">Start by adding students and recording payments.</p>
+              </div>
+            )}
             <div className="mt-4 pt-4 border-t">
               <Button variant="outline" className="w-full">
                 View All Payments
