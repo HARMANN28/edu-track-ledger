@@ -162,8 +162,8 @@ export const StudentList: React.FC = () => {
       student.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.admissionNumber.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesClass = !classFilter || student.class === classFilter;
-    const matchesStatus = !statusFilter || student.status === statusFilter;
+    const matchesClass = classFilter === 'all' || !classFilter || student.class === classFilter;
+    const matchesStatus = statusFilter === 'all' || !statusFilter || student.status === statusFilter;
     
     return matchesSearch && matchesClass && matchesStatus;
   });
@@ -205,7 +205,7 @@ export const StudentList: React.FC = () => {
                 <SelectValue placeholder="All Classes" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Classes</SelectItem>
+                <SelectItem value="all">All Classes</SelectItem>
                 <SelectItem value="8">Class 8</SelectItem>
                 <SelectItem value="9">Class 9</SelectItem>
                 <SelectItem value="10">Class 10</SelectItem>
@@ -218,7 +218,7 @@ export const StudentList: React.FC = () => {
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Status</SelectItem>
+                <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="inactive">Inactive</SelectItem>
                 <SelectItem value="transferred">Transferred</SelectItem>
