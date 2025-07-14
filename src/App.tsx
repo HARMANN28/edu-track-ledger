@@ -10,6 +10,11 @@ import { Header } from "./components/Header";
 import { Login } from "./components/Login";
 import { Dashboard } from "./pages/Dashboard";
 import { Students } from "./pages/Students";
+import { FeeStructure } from "./pages/FeeStructure";
+import { Payments } from "./pages/Payments";
+import { Reports } from "./pages/Reports";
+import { Staff } from "./pages/Staff";
+import { Settings } from "./pages/Settings";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
@@ -41,6 +46,11 @@ const AppContent = () => {
               <Route path="/" element={<Dashboard />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/students" element={<Students />} />
+              <Route path="/fee-structure" element={<FeeStructure />} />
+              <Route path="/payments" element={<Payments />} />
+              <Route path="/reports" element={<Reports />} />
+              <Route path="/staff" element={<Staff />} />
+              <Route path="/settings" element={<Settings />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
