@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,31 +28,46 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Plus, Search, Filter, Download, CreditCard } from 'lucide-react';
+import { CalendarIcon, Plus, Search, Filter, Download, CreditCard, Edit, Trash2, MoreHorizontal } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
 import { useSupabase } from '@/hooks/useSupabase';
 
 interface Payment {
   id: string;
-  studentId: string;
-  studentName: string;
+  student_id: string;
+  student_name: string;
   class: string;
   amount: number;
-  feeType: string;
-  paymentMethod: 'cash' | 'cheque' | 'online' | 'card';
-  paymentDate: string;
-  dueDate: string;
+  fee_type: string;
+  payment_method: 'cash' | 'cheque' | 'online' | 'card';
+  payment_date: string;
+  due_date: string;
   status: 'paid' | 'pending' | 'overdue' | 'partial';
-  receiptNumber: string;
-  academicYear: string;
+  receipt_number: string;
+  academic_year: string;
   month?: string;
   remarks?: string;
 }
-
 
 const getStatusBadge = (status: Payment['status']) => {
   switch (status) {
@@ -70,7 +84,7 @@ const getStatusBadge = (status: Payment['status']) => {
   }
 };
 
-const getPaymentMethodBadge = (method: Payment['paymentMethod']) => {
+const getPaymentMethodBadge = (method: Payment['payment_method']) => {
   const colors = {
     cash: 'bg-primary/10 text-primary border-primary/20',
     cheque: 'bg-secondary/10 text-secondary border-secondary/20',
@@ -88,124 +102,112 @@ const getPaymentMethodBadge = (method: Payment['paymentMethod']) => {
 export const Payments: React.FC = () => {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [paymentDate, setPaymentDate] = useState<Date>();
   const [dueDate, setDueDate] = useState<Date>();
-  const { toast } = useToast();
-  const { getPayments, createPayment, loading } = useSupabase();
+  const { getPayments, createPayment, updatePayment, deletePayment, loading } = useSupabase();
 
-  const [formData, setFormData] = useState<Partial<Payment>>({
-    studentName: '',
+  const [formData, setFormData] = useState({
+    student_name: '',
     class: '',
     amount: 0,
-    feeType: '',
-    paymentMethod: 'cash',
-    paymentDate: '',
-    dueDate: '',
-    status: 'pending',
-    academicYear: '2024-25',
+    fee_type: '',
+    payment_method: 'cash' as Payment['payment_method'],
+    payment_date: '',
+    due_date: '',
+    status: 'pending' as Payment['status'],
+    academic_year: '2024-25',
     month: '',
     remarks: '',
   });
 
-  useEffect(() => {
-    const fetchPayments = async () => {
-      const data = await getPayments();
-      if (data) {
-        // Transform database data to match our Payment interface
-        const transformedData = data.map((payment: any) => ({
-          id: payment.id,
-          studentId: payment.student_id,
-          studentName: payment.student_name,
-          class: payment.class,
-          amount: payment.amount,
-          feeType: payment.fee_type,
-          paymentMethod: payment.payment_method,
-          paymentDate: payment.payment_date,
-          dueDate: payment.due_date,
-          status: payment.status,
-          receiptNumber: payment.receipt_number,
-          academicYear: payment.academic_year,
-          month: payment.month,
-          remarks: payment.remarks,
-        }));
-        setPayments(transformedData);
-      }
-    };
+  const fetchPayments = async () => {
+    const data = await getPayments();
+    if (data) {
+      setPayments(data);
+    }
+  };
 
+  useEffect(() => {
     fetchPayments();
   }, []);
-  const handleSubmit = (e: React.FormEvent) => {
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const createNewPayment = async () => {
+    try {
       const paymentData = {
-        student_id: Date.now().toString(), // This should be selected from actual students
-        student_name: formData.studentName,
-        class: formData.class,
-        amount: formData.amount,
-        fee_type: formData.feeType,
-        payment_method: formData.paymentMethod,
-        payment_date: formData.paymentDate,
-        due_date: formData.dueDate,
-        status: formData.status,
-        receipt_number: `RCP${String(payments.length + 1).padStart(3, '0')}`,
-        academic_year: formData.academicYear,
-        month: formData.month,
-        remarks: formData.remarks,
+        ...formData,
+        student_id: editingPayment?.student_id || Date.now().toString(),
+        receipt_number: editingPayment?.receipt_number || `RCP${String(payments.length + 1).padStart(3, '0')}`,
       };
 
-      const result = await createPayment(paymentData);
-      if (result) {
-        // Refresh payments list
-        const updatedPayments = await getPayments();
-        if (updatedPayments) {
-          const transformedData = updatedPayments.map((payment: any) => ({
-            id: payment.id,
-            studentId: payment.student_id,
-            studentName: payment.student_name,
-            class: payment.class,
-            amount: payment.amount,
-            feeType: payment.fee_type,
-            paymentMethod: payment.payment_method,
-            paymentDate: payment.payment_date,
-            dueDate: payment.due_date,
-            status: payment.status,
-            receiptNumber: payment.receipt_number,
-            academicYear: payment.academic_year,
-            month: payment.month,
-            remarks: payment.remarks,
-          }));
-          setPayments(transformedData);
-        }
-
-        setIsDialogOpen(false);
-        setFormData({
-          studentName: '',
-          class: '',
-          amount: 0,
-          feeType: '',
-          paymentMethod: 'cash',
-          paymentDate: '',
-          dueDate: '',
-          status: 'pending',
-          academicYear: '2024-25',
-          month: '',
-          remarks: '',
-        });
-        setPaymentDate(undefined);
-        setDueDate(undefined);
+      if (editingPayment) {
+        await updatePayment(editingPayment.id, paymentData);
+      } else {
+        await createPayment(paymentData);
       }
-    };
+      
+      await fetchPayments();
+      setIsDialogOpen(false);
+      setEditingPayment(null);
+      resetForm();
+    } catch (error) {
+      console.error('Error saving payment:', error);
+    }
+  };
 
-    createNewPayment();
+  const handleEdit = (payment: Payment) => {
+    setEditingPayment(payment);
+    setFormData({
+      student_name: payment.student_name,
+      class: payment.class,
+      amount: payment.amount,
+      fee_type: payment.fee_type,
+      payment_method: payment.payment_method,
+      payment_date: payment.payment_date,
+      due_date: payment.due_date,
+      status: payment.status,
+      academic_year: payment.academic_year,
+      month: payment.month || '',
+      remarks: payment.remarks || '',
+    });
+    setPaymentDate(payment.payment_date ? new Date(payment.payment_date) : undefined);
+    setDueDate(payment.due_date ? new Date(payment.due_date) : undefined);
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    const success = await deletePayment(id);
+    if (success) {
+      await fetchPayments();
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      student_name: '',
+      class: '',
+      amount: 0,
+      fee_type: '',
+      payment_method: 'cash',
+      payment_date: '',
+      due_date: '',
+      status: 'pending',
+      academic_year: '2024-25',
+      month: '',
+      remarks: '',
+    });
+    setPaymentDate(undefined);
+    setDueDate(undefined);
   };
 
   const filteredPayments = payments.filter((payment) => {
     const matchesSearch = 
-      payment.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.receiptNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.student_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.receipt_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
       payment.class.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || !statusFilter || payment.status === statusFilter;
@@ -224,6 +226,7 @@ export const Payments: React.FC = () => {
       </div>
     );
   }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -233,26 +236,28 @@ export const Payments: React.FC = () => {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2">
+            <Button className="gap-2" onClick={resetForm}>
               <Plus className="h-4 w-4" />
               Record Payment
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Record New Payment</DialogTitle>
+              <DialogTitle>
+                {editingPayment ? 'Edit Payment' : 'Record New Payment'}
+              </DialogTitle>
               <DialogDescription>
-                Record a new fee payment for a student.
+                {editingPayment ? 'Update payment information' : 'Record a new fee payment for a student'}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="studentName">Student Name</Label>
+                  <Label htmlFor="student_name">Student Name</Label>
                   <Input
-                    id="studentName"
-                    value={formData.studentName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, studentName: e.target.value }))}
+                    id="student_name"
+                    value={formData.student_name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, student_name: e.target.value }))}
                     required
                   />
                 </div>
@@ -280,10 +285,10 @@ export const Payments: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="feeType">Fee Type</Label>
+                  <Label htmlFor="fee_type">Fee Type</Label>
                   <Select
-                    value={formData.feeType}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, feeType: value }))}
+                    value={formData.fee_type}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, fee_type: value }))}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select fee type" />
@@ -302,10 +307,10 @@ export const Payments: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="paymentMethod">Payment Method</Label>
+                  <Label htmlFor="payment_method">Payment Method</Label>
                   <Select
-                    value={formData.paymentMethod}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, paymentMethod: value as Payment['paymentMethod'] }))}
+                    value={formData.payment_method}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, payment_method: value as Payment['payment_method'] }))}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -360,7 +365,7 @@ export const Payments: React.FC = () => {
                           setPaymentDate(date);
                           setFormData(prev => ({ 
                             ...prev, 
-                            paymentDate: date ? format(date, "yyyy-MM-dd") : '' 
+                            payment_date: date ? format(date, "yyyy-MM-dd") : '' 
                           }));
                         }}
                         initialFocus
@@ -391,7 +396,7 @@ export const Payments: React.FC = () => {
                           setDueDate(date);
                           setFormData(prev => ({ 
                             ...prev, 
-                            dueDate: date ? format(date, "yyyy-MM-dd") : '' 
+                            due_date: date ? format(date, "yyyy-MM-dd") : '' 
                           }));
                         }}
                         initialFocus
@@ -422,11 +427,11 @@ export const Payments: React.FC = () => {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="academicYear">Academic Year</Label>
+                  <Label htmlFor="academic_year">Academic Year</Label>
                   <Input
-                    id="academicYear"
-                    value={formData.academicYear}
-                    onChange={(e) => setFormData(prev => ({ ...prev, academicYear: e.target.value }))}
+                    id="academic_year"
+                    value={formData.academic_year}
+                    onChange={(e) => setFormData(prev => ({ ...prev, academic_year: e.target.value }))}
                     placeholder="2024-25"
                   />
                 </div>
@@ -446,7 +451,9 @@ export const Payments: React.FC = () => {
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit">Record Payment</Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? 'Saving...' : (editingPayment ? 'Update Payment' : 'Record Payment')}
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -547,17 +554,18 @@ export const Payments: React.FC = () => {
                   <TableHead>Payment Method</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="w-12"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredPayments.map((payment) => (
                   <TableRow key={payment.id}>
                     <TableCell className="font-medium">
-                      {payment.receiptNumber || 'Pending'}
+                      {payment.receipt_number || 'Pending'}
                     </TableCell>
                     <TableCell>
                       <div>
-                        <p className="font-medium">{payment.studentName}</p>
+                        <p className="font-medium">{payment.student_name}</p>
                         <p className="text-sm text-muted-foreground">
                           Class {payment.class}
                         </p>
@@ -567,29 +575,72 @@ export const Payments: React.FC = () => {
                       <div className="font-medium">₹{payment.amount.toLocaleString()}</div>
                       {payment.month && (
                         <div className="text-sm text-muted-foreground">
-                          {payment.month} {payment.academicYear}
+                          {payment.month} {payment.academic_year}
                         </div>
                       )}
                     </TableCell>
-                    <TableCell>{payment.feeType}</TableCell>
+                    <TableCell>{payment.fee_type}</TableCell>
                     <TableCell>
-                      {getPaymentMethodBadge(payment.paymentMethod)}
+                      {getPaymentMethodBadge(payment.payment_method)}
                     </TableCell>
                     <TableCell>
                       <div>
-                        {payment.paymentDate ? (
+                        {payment.payment_date ? (
                           <p className="text-sm">
-                            {format(new Date(payment.paymentDate), 'dd MMM yyyy')}
+                            {format(new Date(payment.payment_date), 'dd MMM yyyy')}
                           </p>
                         ) : (
                           <p className="text-sm text-muted-foreground">Not paid</p>
                         )}
                         <p className="text-xs text-muted-foreground">
-                          Due: {format(new Date(payment.dueDate), 'dd MMM yyyy')}
+                          Due: {format(new Date(payment.due_date), 'dd MMM yyyy')}
                         </p>
                       </div>
                     </TableCell>
                     <TableCell>{getStatusBadge(payment.status)}</TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEdit(payment)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit Payment
+                          </DropdownMenuItem>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <DropdownMenuItem 
+                                className="text-destructive"
+                                onSelect={(e) => e.preventDefault()}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This action cannot be undone. This will permanently delete the payment record.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDelete(payment.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

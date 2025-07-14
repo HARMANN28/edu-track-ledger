@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +18,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Search, Plus, Filter, MoreHorizontal, Eye, Edit, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -28,7 +38,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import type { Student } from '@/types';
 import { useSupabase } from '@/hooks/useSupabase';
-
+import { StudentForm } from './StudentForm';
 
 const getStatusBadge = (status: Student['status']) => {
   switch (status) {
@@ -66,54 +76,77 @@ export const StudentList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [classFilter, setClassFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const { getStudents, loading } = useSupabase();
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const { getStudents, deleteStudent, loading } = useSupabase();
+
+  const fetchStudents = async () => {
+    const data = await getStudents();
+    if (data) {
+      const transformedData = data.map((student: any) => ({
+        id: student.id,
+        admissionNumber: student.admission_number,
+        firstName: student.first_name,
+        middleName: student.middle_name,
+        lastName: student.last_name,
+        dateOfBirth: student.date_of_birth,
+        gender: student.gender,
+        class: student.class,
+        section: student.section,
+        rollNumber: student.roll_number,
+        dateOfAdmission: student.date_of_admission,
+        academicYear: student.academic_year,
+        fatherName: student.father_name,
+        fatherOccupation: student.father_occupation,
+        fatherContact: student.father_contact,
+        fatherEmail: student.father_email,
+        motherName: student.mother_name,
+        motherOccupation: student.mother_occupation,
+        motherContact: student.mother_contact,
+        motherEmail: student.mother_email,
+        guardianName: student.guardian_name,
+        guardianRelationship: student.guardian_relationship,
+        guardianContact: student.guardian_contact,
+        permanentAddress: student.permanent_address,
+        currentAddress: student.current_address,
+        city: student.city,
+        state: student.state,
+        pinCode: student.pin_code,
+        country: student.country,
+        discountType: student.discount_type,
+        discountPercentage: student.discount_percentage,
+        discountValidityPeriod: student.discount_validity_period,
+        status: student.status,
+      }));
+      setStudents(transformedData);
+    }
+  };
 
   useEffect(() => {
-    const fetchStudents = async () => {
-      const data = await getStudents();
-      if (data) {
-        // Transform database data to match our Student interface
-        const transformedData = data.map((student: any) => ({
-          id: student.id,
-          admissionNumber: student.admission_number,
-          firstName: student.first_name,
-          middleName: student.middle_name,
-          lastName: student.last_name,
-          dateOfBirth: student.date_of_birth,
-          gender: student.gender,
-          class: student.class,
-          section: student.section,
-          rollNumber: student.roll_number,
-          dateOfAdmission: student.date_of_admission,
-          academicYear: student.academic_year,
-          fatherName: student.father_name,
-          fatherOccupation: student.father_occupation,
-          fatherContact: student.father_contact,
-          fatherEmail: student.father_email,
-          motherName: student.mother_name,
-          motherOccupation: student.mother_occupation,
-          motherContact: student.mother_contact,
-          motherEmail: student.mother_email,
-          guardianName: student.guardian_name,
-          guardianRelationship: student.guardian_relationship,
-          guardianContact: student.guardian_contact,
-          permanentAddress: student.permanent_address,
-          currentAddress: student.current_address,
-          city: student.city,
-          state: student.state,
-          pinCode: student.pin_code,
-          country: student.country,
-          discountType: student.discount_type,
-          discountPercentage: student.discount_percentage,
-          discountValidityPeriod: student.discount_validity_period,
-          status: student.status,
-        }));
-        setStudents(transformedData);
-      }
-    };
-
     fetchStudents();
   }, []);
+
+  const handleEdit = (student: Student) => {
+    setEditingStudent(student);
+    setIsFormOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    const success = await deleteStudent(id);
+    if (success) {
+      fetchStudents();
+    }
+  };
+
+  const handleFormSuccess = () => {
+    fetchStudents();
+    setEditingStudent(null);
+  };
+
+  const handleFormClose = () => {
+    setIsFormOpen(false);
+    setEditingStudent(null);
+  };
 
   const filteredStudents = students.filter((student) => {
     const matchesSearch = 
@@ -134,6 +167,7 @@ export const StudentList: React.FC = () => {
       </div>
     );
   }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -141,7 +175,7 @@ export const StudentList: React.FC = () => {
           <h1 className="text-3xl font-bold text-foreground">Students</h1>
           <p className="text-muted-foreground">Manage student records and information</p>
         </div>
-        <Button className="gap-2">
+        <Button className="gap-2" onClick={() => setIsFormOpen(true)}>
           <Plus className="h-4 w-4" />
           Add Student
         </Button>
@@ -255,14 +289,38 @@ export const StudentList: React.FC = () => {
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEdit(student)}>
                             <Edit className="mr-2 h-4 w-4" />
                             Edit Student
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <DropdownMenuItem 
+                                className="text-destructive"
+                                onSelect={(e) => e.preventDefault()}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This action cannot be undone. This will permanently delete the student record.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDelete(student.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -279,6 +337,13 @@ export const StudentList: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      <StudentForm
+        isOpen={isFormOpen}
+        onClose={handleFormClose}
+        student={editingStudent}
+        onSuccess={handleFormSuccess}
+      />
     </div>
   );
 };

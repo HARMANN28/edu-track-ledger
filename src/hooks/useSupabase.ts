@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -6,7 +6,7 @@ export const useSupabase = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  // Students
+  // Students CRUD
   const getStudents = async () => {
     setLoading(true);
     try {
@@ -32,10 +32,9 @@ export const useSupabase = () => {
   const createStudent = async (studentData: any) => {
     setLoading(true);
     try {
-
       const { data, error } = await supabase
         .from('students')
-        .insert([{ ...studentData, user_id: '00000000-0000-0000-0000-000000000000' }])
+        .insert([studentData])
         .select()
         .single();
       
@@ -117,7 +116,7 @@ export const useSupabase = () => {
     }
   };
 
-  // Fee Structures
+  // Fee Structures CRUD
   const getFeeStructures = async () => {
     setLoading(true);
     try {
@@ -143,10 +142,9 @@ export const useSupabase = () => {
   const createFeeStructure = async (feeData: any) => {
     setLoading(true);
     try {
-
       const { data, error } = await supabase
         .from('fee_structures')
-        .insert([{ ...feeData, user_id: '00000000-0000-0000-0000-000000000000' }])
+        .insert([feeData])
         .select()
         .single();
       
@@ -170,7 +168,65 @@ export const useSupabase = () => {
     }
   };
 
-  // Payments
+  const updateFeeStructure = async (id: string, feeData: any) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('fee_structures')
+        .update(feeData)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Fee structure updated",
+        description: "Fee structure has been updated successfully.",
+      });
+      
+      return data;
+    } catch (error) {
+      toast({
+        title: "Error updating fee structure",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteFeeStructure = async (id: string) => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('fee_structures')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Fee structure deleted",
+        description: "Fee structure has been deleted successfully.",
+      });
+      
+      return true;
+    } catch (error) {
+      toast({
+        title: "Error deleting fee structure",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Payments CRUD
   const getPayments = async () => {
     setLoading(true);
     try {
@@ -196,10 +252,9 @@ export const useSupabase = () => {
   const createPayment = async (paymentData: any) => {
     setLoading(true);
     try {
-
       const { data, error } = await supabase
         .from('payments')
-        .insert([{ ...paymentData, user_id: '00000000-0000-0000-0000-000000000000' }])
+        .insert([paymentData])
         .select()
         .single();
       
@@ -223,14 +278,72 @@ export const useSupabase = () => {
     }
   };
 
-  // Discount Types
+  const updatePayment = async (id: string, paymentData: any) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('payments')
+        .update(paymentData)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Payment updated",
+        description: "Payment has been updated successfully.",
+      });
+      
+      return data;
+    } catch (error) {
+      toast({
+        title: "Error updating payment",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deletePayment = async (id: string) => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('payments')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Payment deleted",
+        description: "Payment has been deleted successfully.",
+      });
+      
+      return true;
+    } catch (error) {
+      toast({
+        title: "Error deleting payment",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Discount Types CRUD
   const getDiscountTypes = async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from('discount_types')
         .select('*')
-        .eq('is_active', true);
+        .order('name');
       
       if (error) throw error;
       return data;
@@ -246,6 +359,93 @@ export const useSupabase = () => {
     }
   };
 
+  const createDiscountType = async (discountData: any) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('discount_types')
+        .insert([discountData])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Discount type created",
+        description: "Discount type has been created successfully.",
+      });
+      
+      return data;
+    } catch (error) {
+      toast({
+        title: "Error creating discount type",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateDiscountType = async (id: string, discountData: any) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('discount_types')
+        .update(discountData)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Discount type updated",
+        description: "Discount type has been updated successfully.",
+      });
+      
+      return data;
+    } catch (error) {
+      toast({
+        title: "Error updating discount type",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteDiscountType = async (id: string) => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('discount_types')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Discount type deleted",
+        description: "Discount type has been deleted successfully.",
+      });
+      
+      return true;
+    } catch (error) {
+      toast({
+        title: "Error deleting discount type",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     loading,
     // Students
@@ -256,10 +456,17 @@ export const useSupabase = () => {
     // Fee Structures
     getFeeStructures,
     createFeeStructure,
+    updateFeeStructure,
+    deleteFeeStructure,
     // Payments
     getPayments,
     createPayment,
+    updatePayment,
+    deletePayment,
     // Discount Types
     getDiscountTypes,
+    createDiscountType,
+    updateDiscountType,
+    deleteDiscountType,
   };
 };
