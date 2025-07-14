@@ -536,14 +536,14 @@ export const StudentForm: React.FC<StudentFormProps> = ({
               <div className="space-y-2">
                 <Label htmlFor="discount_type">Discount Type</Label>
                 <Select
-                  value={formData.discount_type || ''}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, discount_type: value || null }))}
+                  value={formData.discount_type || 'no-discount'}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, discount_type: value === 'no-discount' ? null : value }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select discount type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No Discount</SelectItem>
+                    <SelectItem value="no-discount">No Discount</SelectItem>
                     <SelectItem value="RTE">RTE</SelectItem>
                     <SelectItem value="SC">SC</SelectItem>
                     <SelectItem value="ED">ED</SelectItem>
