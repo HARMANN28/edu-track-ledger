@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { User } from '@supabase/supabase-js';
 
-interface AuthUser extends User {
-  role?: 'admin' | 'staff';
-  name?: string;
+interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  role: 'admin' | 'staff';
 }
 
 interface AuthContextType {
@@ -12,7 +12,6 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   isLoading: boolean;
-  signUp: (email: string, password: string, name: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,117 +24,75 @@ export const useAuth = () => {
   return context;
 };
 
+// Demo users with predefined credentials
+const DEMO_USERS = [
+  {
+    id: 'admin-1',
+    email: 'admin@demo.com',
+    password: 'admin123',
+    name: 'Admin User',
+    role: 'admin' as const,
+  },
+  {
+    id: 'staff-1',
+    email: 'staff@demo.com',
+    password: 'staff123',
+    name: 'Staff User',
+    role: 'staff' as const,
+  },
+];
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser({
-          ...session.user,
-          role: 'admin', // Default role, you can modify this based on your needs
-          name: session.user.user_metadata?.name || session.user.email?.split('@')[0],
-        });
+    // Check if user is stored in localStorage
+    const storedUser = localStorage.getItem('demo-user');
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (error) {
+        localStorage.removeItem('demo-user');
       }
-      setIsLoading(false);
-    });
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUser({
-          ...session.user,
-          role: 'admin', // Default role, you can modify this based on your needs
-          name: session.user.user_metadata?.name || session.user.email?.split('@')[0],
-        });
-      } else {
-        setUser(null);
-      }
-      setIsLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    }
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const demoUser = DEMO_USERS.find(
+        u => u.email === email && u.password === password
+      );
 
-      if (error) {
-        console.error('Login error:', error);
-        // Provide more specific error messages
-        if (error.message.includes('Invalid login credentials')) {
-          throw new Error('Invalid email or password. Please check your credentials and try again.');
-        } else if (error.message.includes('Email not confirmed')) {
-          throw new Error('Please check your email and click the confirmation link to verify your account.');
-        } else {
-          throw new Error(error.message);
-        }
-      }
-
-      if (data.user) {
-        setUser({
-          ...data.user,
-          role: 'admin', // Default role, you can modify this based on your needs
-          name: data.user.user_metadata?.name || data.user.email?.split('@')[0],
-        });
+      if (demoUser) {
+        const authUser: AuthUser = {
+          id: demoUser.id,
+          email: demoUser.email,
+          name: demoUser.name,
+          role: demoUser.role,
+        };
+        
+        setUser(authUser);
+        localStorage.setItem('demo-user', JSON.stringify(authUser));
         return true;
+      } else {
+        throw new Error('Invalid email or password');
       }
-
-      return false;
     } catch (error) {
-      console.error('Login error:', error);
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const signUp = async (email: string, password: string, name: string): Promise<boolean> => {
-    setIsLoading(true);
-    
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name: name,
-          },
-        },
-      });
-
-      if (error) {
-        console.error('Sign up error:', error);
-        throw new Error(error.message);
-      }
-
-      if (data.user) {
-        // User will be set via the auth state change listener
-        return true;
-      }
-
-      return false;
-    } catch (error) {
-      console.error('Sign up error:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const logout = async () => {
-    await supabase.auth.signOut();
+  const logout = () => {
     setUser(null);
+    localStorage.removeItem('demo-user');
   };
 
   const value = {
@@ -143,7 +100,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     login,
     logout,
     isLoading,
-    signUp,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -41,6 +41,9 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Plus, Edit, Trash2, DollarSign } from 'lucide-react';
 import { useSupabase } from '@/hooks/useSupabase';
+import { useAuth } from '@/components/AuthProvider';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertTriangle } from 'lucide-react';
 
 interface FeeStructure {
   id: string;
@@ -57,6 +60,24 @@ export const FeeStructure: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingStructure, setEditingStructure] = useState<FeeStructure | null>(null);
   const { getFeeStructures, createFeeStructure, updateFeeStructure, deleteFeeStructure, loading } = useSupabase();
+  const { user } = useAuth();
+
+  if (user?.role === 'staff') {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Fee Structure</h1>
+          <p className="text-muted-foreground">Fee structures for different classes</p>
+        </div>
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            You don't have permission to access fee structure management. This feature is only available for administrators.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   const [formData, setFormData] = useState({
     class: '',

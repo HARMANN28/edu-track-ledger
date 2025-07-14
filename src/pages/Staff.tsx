@@ -36,6 +36,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Plus, Search, MoreHorizontal, Edit, Trash2, UserCheck, Mail, Phone } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/components/AuthProvider';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertTriangle } from 'lucide-react';
 
 interface StaffMember {
   id: string;
@@ -125,6 +128,24 @@ export const Staff: React.FC = () => {
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  if (user?.role === 'staff') {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Staff Management</h1>
+          <p className="text-muted-foreground">Staff members and their permissions</p>
+        </div>
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            You don't have permission to access staff management. This feature is only available for administrators.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   const [formData, setFormData] = useState<Partial<StaffMember>>({
     name: '',

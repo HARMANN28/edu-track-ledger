@@ -51,6 +51,9 @@ import {
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useSupabase } from '@/hooks/useSupabase';
+import { useAuth } from '@/components/AuthProvider';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertTriangle } from 'lucide-react';
 
 interface Payment {
   id: string;
@@ -108,6 +111,24 @@ export const Payments: React.FC = () => {
   const [paymentDate, setPaymentDate] = useState<Date>();
   const [dueDate, setDueDate] = useState<Date>();
   const { getPayments, createPayment, updatePayment, deletePayment, loading } = useSupabase();
+  const { user } = useAuth();
+
+  if (user?.role === 'staff') {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Payments</h1>
+          <p className="text-muted-foreground">Fee payments and transactions</p>
+        </div>
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            You don't have permission to access payment management. This feature is only available for administrators.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   const [formData, setFormData] = useState({
     student_name: '',

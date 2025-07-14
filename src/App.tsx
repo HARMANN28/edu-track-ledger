@@ -2,7 +2,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider, useAuth } from "./components/AuthProvider";
 import { Login } from "./components/Login";
@@ -17,8 +16,6 @@ import { Staff } from "./pages/Staff";
 import { Settings } from "./pages/Settings";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-
-const queryClient = new QueryClient();
 
 const AppContent = () => {
   const { user, isLoading } = useAuth();
@@ -61,17 +58,15 @@ const AppContent = () => {
 };
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AppContent />
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
+  <AuthProvider>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
+    </TooltipProvider>
+  </AuthProvider>
 );
 
 export default App;

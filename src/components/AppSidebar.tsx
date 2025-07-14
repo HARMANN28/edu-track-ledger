@@ -36,8 +36,6 @@ const adminItems = [
 
 const staffItems = [
   { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
-  { title: 'Students', url: '/students', icon: Users },
-  { title: 'Payments', url: '/payments', icon: CreditCard },
   { title: 'Reports', url: '/reports', icon: FileText },
 ];
 
@@ -50,7 +48,6 @@ export const AppSidebar: React.FC = () => {
   const items = user?.role === 'admin' ? adminItems : staffItems;
   const isCollapsed = state === 'collapsed';
 
-  const isActive = (path: string) => currentPath === path;
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     isActive ? 'bg-primary/10 text-primary font-medium border-r-2 border-primary' : 'hover:bg-muted/50 text-muted-foreground hover:text-foreground';
 

@@ -24,12 +24,14 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { useAuth } from '@/components/AuthProvider';
 
 
 export const Reports: React.FC = () => {
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
   const [selectedClass, setSelectedClass] = useState('all');
   const [reportType, setReportType] = useState('overview');
+  const { user } = useAuth();
 
   // Initialize with empty data - will be populated from actual database
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
@@ -59,6 +61,14 @@ export const Reports: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      {user?.role === 'staff' && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <p className="text-sm text-blue-800">
+            <strong>Staff Access:</strong> You have view and export access to reports. Contact an administrator for data modifications.
+          </p>
+        </div>
+      )}
 
       {/* Filters */}
       <Card>
