@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,98 +27,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import type { Student } from '@/types';
+import { useSupabase } from '@/hooks/useSupabase';
 
-// Mock data for demonstration
-const mockStudents: Student[] = [
-  {
-    id: '1',
-    admissionNumber: 'ADM001',
-    firstName: 'Rajesh',
-    lastName: 'Kumar',
-    dateOfBirth: '2008-05-15',
-    gender: 'male',
-    class: '10',
-    section: 'A',
-    rollNumber: '15',
-    dateOfAdmission: '2020-04-01',
-    academicYear: '2024-25',
-    fatherName: 'Ram Kumar',
-    fatherOccupation: 'Engineer',
-    fatherContact: '+91-9876543210',
-    fatherEmail: 'ram.kumar@email.com',
-    motherName: 'Sita Kumar',
-    motherOccupation: 'Teacher',
-    motherContact: '+91-9876543211',
-    motherEmail: 'sita.kumar@email.com',
-    permanentAddress: '123 Main Street',
-    currentAddress: '123 Main Street',
-    city: 'Mumbai',
-    state: 'Maharashtra',
-    pinCode: '400001',
-    country: 'India',
-    status: 'active',
-  },
-  {
-    id: '2',
-    admissionNumber: 'ADM002',
-    firstName: 'Priya',
-    lastName: 'Sharma',
-    dateOfBirth: '2009-03-22',
-    gender: 'female',
-    class: '9',
-    section: 'B',
-    rollNumber: '23',
-    dateOfAdmission: '2021-04-01',
-    academicYear: '2024-25',
-    fatherName: 'Suresh Sharma',
-    fatherOccupation: 'Doctor',
-    fatherContact: '+91-9876543212',
-    fatherEmail: 'suresh.sharma@email.com',
-    motherName: 'Meera Sharma',
-    motherOccupation: 'Nurse',
-    motherContact: '+91-9876543213',
-    motherEmail: 'meera.sharma@email.com',
-    permanentAddress: '456 Park Avenue',
-    currentAddress: '456 Park Avenue',
-    city: 'Delhi',
-    state: 'Delhi',
-    pinCode: '110001',
-    country: 'India',
-    discountType: 'SC',
-    discountPercentage: 25,
-    status: 'active',
-  },
-  {
-    id: '3',
-    admissionNumber: 'ADM003',
-    firstName: 'Amit',
-    lastName: 'Singh',
-    dateOfBirth: '2007-08-10',
-    gender: 'male',
-    class: '11',
-    section: 'C',
-    rollNumber: '08',
-    dateOfAdmission: '2019-04-01',
-    academicYear: '2024-25',
-    fatherName: 'Vijay Singh',
-    fatherOccupation: 'Business',
-    fatherContact: '+91-9876543214',
-    fatherEmail: 'vijay.singh@email.com',
-    motherName: 'Sunita Singh',
-    motherOccupation: 'Homemaker',
-    motherContact: '+91-9876543215',
-    motherEmail: 'sunita.singh@email.com',
-    permanentAddress: '789 Green Lane',
-    currentAddress: '789 Green Lane',
-    city: 'Bangalore',
-    state: 'Karnataka',
-    pinCode: '560001',
-    country: 'India',
-    discountType: 'RTE',
-    discountPercentage: 100,
-    status: 'active',
-  },
-];
 
 const getStatusBadge = (status: Student['status']) => {
   switch (status) {
@@ -151,10 +62,58 @@ const getDiscountBadge = (type?: string, percentage?: number) => {
 };
 
 export const StudentList: React.FC = () => {
-  const [students] = useState<Student[]>(mockStudents);
+  const [students, setStudents] = useState<Student[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [classFilter, setClassFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const { getStudents, loading } = useSupabase();
+
+  useEffect(() => {
+    const fetchStudents = async () => {
+      const data = await getStudents();
+      if (data) {
+        // Transform database data to match our Student interface
+        const transformedData = data.map((student: any) => ({
+          id: student.id,
+          admissionNumber: student.admission_number,
+          firstName: student.first_name,
+          middleName: student.middle_name,
+          lastName: student.last_name,
+          dateOfBirth: student.date_of_birth,
+          gender: student.gender,
+          class: student.class,
+          section: student.section,
+          rollNumber: student.roll_number,
+          dateOfAdmission: student.date_of_admission,
+          academicYear: student.academic_year,
+          fatherName: student.father_name,
+          fatherOccupation: student.father_occupation,
+          fatherContact: student.father_contact,
+          fatherEmail: student.father_email,
+          motherName: student.mother_name,
+          motherOccupation: student.mother_occupation,
+          motherContact: student.mother_contact,
+          motherEmail: student.mother_email,
+          guardianName: student.guardian_name,
+          guardianRelationship: student.guardian_relationship,
+          guardianContact: student.guardian_contact,
+          permanentAddress: student.permanent_address,
+          currentAddress: student.current_address,
+          city: student.city,
+          state: student.state,
+          pinCode: student.pin_code,
+          country: student.country,
+          discountType: student.discount_type,
+          discountPercentage: student.discount_percentage,
+          discountValidityPeriod: student.discount_validity_period,
+          status: student.status,
+        }));
+        setStudents(transformedData);
+      }
+    };
+
+    fetchStudents();
+  }, []);
 
   const filteredStudents = students.filter((student) => {
     const matchesSearch = 
@@ -168,6 +127,13 @@ export const StudentList: React.FC = () => {
     return matchesSearch && matchesClass && matchesStatus;
   });
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">

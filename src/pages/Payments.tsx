@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,6 +35,7 @@ import { CalendarIcon, Plus, Search, Filter, Download, CreditCard } from 'lucide
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { useSupabase } from '@/hooks/useSupabase';
 
 interface Payment {
   id: string;
@@ -52,53 +54,6 @@ interface Payment {
   remarks?: string;
 }
 
-const mockPayments: Payment[] = [
-  {
-    id: '1',
-    studentId: '1',
-    studentName: 'Rajesh Kumar',
-    class: '10-A',
-    amount: 5000,
-    feeType: 'Monthly Fee',
-    paymentMethod: 'online',
-    paymentDate: '2024-01-15',
-    dueDate: '2024-01-10',
-    status: 'paid',
-    receiptNumber: 'RCP001',
-    academicYear: '2024-25',
-    month: 'January',
-  },
-  {
-    id: '2',
-    studentId: '2',
-    studentName: 'Priya Sharma',
-    class: '9-B',
-    amount: 4500,
-    feeType: 'Monthly Fee',
-    paymentMethod: 'cash',
-    paymentDate: '2024-01-20',
-    dueDate: '2024-01-10',
-    status: 'paid',
-    receiptNumber: 'RCP002',
-    academicYear: '2024-25',
-    month: 'January',
-  },
-  {
-    id: '3',
-    studentId: '3',
-    studentName: 'Amit Singh',
-    class: '11-C',
-    amount: 5500,
-    feeType: 'Monthly Fee',
-    paymentMethod: 'card',
-    paymentDate: '',
-    dueDate: '2024-02-10',
-    status: 'pending',
-    receiptNumber: '',
-    academicYear: '2024-25',
-    month: 'February',
-  },
-];
 
 const getStatusBadge = (status: Payment['status']) => {
   switch (status) {
@@ -131,13 +86,14 @@ const getPaymentMethodBadge = (method: Payment['paymentMethod']) => {
 };
 
 export const Payments: React.FC = () => {
-  const [payments, setPayments] = useState<Payment[]>(mockPayments);
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [paymentDate, setPaymentDate] = useState<Date>();
   const [dueDate, setDueDate] = useState<Date>();
   const { toast } = useToast();
+  const { getPayments, createPayment, loading } = useSupabase();
 
   const [formData, setFormData] = useState<Partial<Payment>>({
     studentName: '',
@@ -153,39 +109,97 @@ export const Payments: React.FC = () => {
     remarks: '',
   });
 
+  useEffect(() => {
+    const fetchPayments = async () => {
+      const data = await getPayments();
+      if (data) {
+        // Transform database data to match our Payment interface
+        const transformedData = data.map((payment: any) => ({
+          id: payment.id,
+          studentId: payment.student_id,
+          studentName: payment.student_name,
+          class: payment.class,
+          amount: payment.amount,
+          feeType: payment.fee_type,
+          paymentMethod: payment.payment_method,
+          paymentDate: payment.payment_date,
+          dueDate: payment.due_date,
+          status: payment.status,
+          receiptNumber: payment.receipt_number,
+          academicYear: payment.academic_year,
+          month: payment.month,
+          remarks: payment.remarks,
+        }));
+        setPayments(transformedData);
+      }
+    };
+
+    fetchPayments();
+  }, []);
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const newPayment: Payment = {
-      id: Date.now().toString(),
-      studentId: Date.now().toString(),
-      receiptNumber: `RCP${String(payments.length + 1).padStart(3, '0')}`,
-      ...formData as Payment,
+    const createNewPayment = async () => {
+      const paymentData = {
+        student_id: Date.now().toString(), // This should be selected from actual students
+        student_name: formData.studentName,
+        class: formData.class,
+        amount: formData.amount,
+        fee_type: formData.feeType,
+        payment_method: formData.paymentMethod,
+        payment_date: formData.paymentDate,
+        due_date: formData.dueDate,
+        status: formData.status,
+        receipt_number: `RCP${String(payments.length + 1).padStart(3, '0')}`,
+        academic_year: formData.academicYear,
+        month: formData.month,
+        remarks: formData.remarks,
+      };
+
+      const result = await createPayment(paymentData);
+      if (result) {
+        // Refresh payments list
+        const updatedPayments = await getPayments();
+        if (updatedPayments) {
+          const transformedData = updatedPayments.map((payment: any) => ({
+            id: payment.id,
+            studentId: payment.student_id,
+            studentName: payment.student_name,
+            class: payment.class,
+            amount: payment.amount,
+            feeType: payment.fee_type,
+            paymentMethod: payment.payment_method,
+            paymentDate: payment.payment_date,
+            dueDate: payment.due_date,
+            status: payment.status,
+            receiptNumber: payment.receipt_number,
+            academicYear: payment.academic_year,
+            month: payment.month,
+            remarks: payment.remarks,
+          }));
+          setPayments(transformedData);
+        }
+
+        setIsDialogOpen(false);
+        setFormData({
+          studentName: '',
+          class: '',
+          amount: 0,
+          feeType: '',
+          paymentMethod: 'cash',
+          paymentDate: '',
+          dueDate: '',
+          status: 'pending',
+          academicYear: '2024-25',
+          month: '',
+          remarks: '',
+        });
+        setPaymentDate(undefined);
+        setDueDate(undefined);
+      }
     };
 
-    setPayments(prev => [...prev, newPayment]);
-    
-    toast({
-      title: "Payment recorded",
-      description: `Payment of ₹${formData.amount} has been recorded successfully.`,
-    });
-
-    setIsDialogOpen(false);
-    setFormData({
-      studentName: '',
-      class: '',
-      amount: 0,
-      feeType: '',
-      paymentMethod: 'cash',
-      paymentDate: '',
-      dueDate: '',
-      status: 'pending',
-      academicYear: '2024-25',
-      month: '',
-      remarks: '',
-    });
-    setPaymentDate(undefined);
-    setDueDate(undefined);
+    createNewPayment();
   };
 
   const filteredPayments = payments.filter((payment) => {
@@ -203,6 +217,13 @@ export const Payments: React.FC = () => {
   const paidAmount = filteredPayments.filter(p => p.status === 'paid').reduce((sum, payment) => sum + payment.amount, 0);
   const pendingAmount = filteredPayments.filter(p => p.status === 'pending').reduce((sum, payment) => sum + payment.amount, 0);
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">

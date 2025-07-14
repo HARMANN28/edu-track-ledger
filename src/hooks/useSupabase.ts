@@ -32,12 +32,10 @@ export const useSupabase = () => {
   const createStudent = async (studentData: any) => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
 
       const { data, error } = await supabase
         .from('students')
-        .insert([{ ...studentData, user_id: user.id }])
+        .insert([{ ...studentData, user_id: '00000000-0000-0000-0000-000000000000' }])
         .select()
         .single();
       
@@ -145,12 +143,10 @@ export const useSupabase = () => {
   const createFeeStructure = async (feeData: any) => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
 
       const { data, error } = await supabase
         .from('fee_structures')
-        .insert([{ ...feeData, user_id: user.id }])
+        .insert([{ ...feeData, user_id: '00000000-0000-0000-0000-000000000000' }])
         .select()
         .single();
       
@@ -200,12 +196,10 @@ export const useSupabase = () => {
   const createPayment = async (paymentData: any) => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
 
       const { data, error } = await supabase
         .from('payments')
-        .insert([{ ...paymentData, user_id: user.id }])
+        .insert([{ ...paymentData, user_id: '00000000-0000-0000-0000-000000000000' }])
         .select()
         .single();
       
