@@ -22,6 +22,7 @@ import {
   TrendingUp,
   UserCheck,
 } from 'lucide-react';
+import { useAuth } from './AuthProvider';
 
 const adminItems = [
   { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
@@ -43,8 +44,7 @@ const staffItems = [
 export const AppSidebar: React.FC = () => {
   const { state } = useSidebar();
   const location = useLocation();
-  // Mock user for now
-  const user = { role: 'admin' };
+  const { user } = useAuth();
   const currentPath = location.pathname;
 
   const items = user?.role === 'admin' ? adminItems : staffItems;

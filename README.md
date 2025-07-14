@@ -1,73 +1,99 @@
-# Welcome to your Lovable project
+# Educational Fees Management System
 
-## Project info
+A comprehensive web application for managing educational institution fees, student records, and payment tracking.
 
-**URL**: https://lovable.dev/projects/fe488435-f16b-4971-ad70-b1e169943789
+## Features
 
-## How can I edit this code?
+- **Student Management**: Complete student records with personal, academic, and contact information
+- **Fee Structure Management**: Configure fee structures for different classes
+- **Payment Tracking**: Record and track fee payments with multiple payment methods
+- **Reports & Analytics**: Generate comprehensive reports and analytics
+- **User Authentication**: Secure login system with role-based access
+- **Responsive Design**: Works seamlessly on desktop and mobile devices
 
-There are several ways of editing your application.
+## Technology Stack
 
-**Use Lovable**
+- **Frontend**: React 18, TypeScript, Tailwind CSS
+- **UI Components**: shadcn/ui
+- **Backend**: Supabase (PostgreSQL)
+- **Authentication**: Supabase Auth
+- **State Management**: React Query (TanStack Query)
+- **Build Tool**: Vite
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/fe488435-f16b-4971-ad70-b1e169943789) and start prompting.
+## Setup Instructions
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prerequisites
 
-**Use your preferred IDE**
+- Node.js 18+ and npm
+- Supabase account
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Database Setup
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+1. Create a new Supabase project
+2. Run the SQL queries provided in the setup documentation to create the database schema
+3. Update the Supabase configuration in `src/integrations/supabase/client.ts`
 
-Follow these steps:
+### Local Development
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+```bash
+# Install dependencies
+npm install
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start development server
 npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
 ```
 
-**Edit a file directly in GitHub**
+### Environment Variables
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Create a `.env` file in the root directory:
 
-**Use GitHub Codespaces**
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Deployment
 
-## What technologies are used for this project?
+### Vercel
+1. Connect your GitHub repository to Vercel
+2. Add environment variables in Vercel dashboard
+3. Deploy automatically on push to main branch
 
-This project is built with:
+### Netlify
+1. Connect your GitHub repository to Netlify
+2. Add environment variables in Netlify dashboard
+3. Deploy automatically on push to main branch
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Usage
 
-## How can I deploy this project?
+1. **Sign Up/Login**: Create an account or login with existing credentials
+2. **Add Students**: Navigate to Students section to add student records
+3. **Configure Fees**: Set up fee structures for different classes
+4. **Record Payments**: Track fee payments and generate receipts
+5. **Generate Reports**: View comprehensive reports and analytics
 
-Simply open [Lovable](https://lovable.dev/projects/fe488435-f16b-4971-ad70-b1e169943789) and click on Share -> Publish.
+## Database Schema
 
-## Can I connect a custom domain to my Lovable project?
+The system uses the following main tables:
+- `users` - User accounts and authentication
+- `students` - Student records and information
+- `fee_structures` - Fee configuration by class
+- `payments` - Payment transactions and receipts
+- `discount_types` - Available discount categories
 
-Yes, you can!
+## Contributing
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## License
+
+This project is licensed under the MIT License.
