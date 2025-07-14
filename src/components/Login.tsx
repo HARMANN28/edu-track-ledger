@@ -20,9 +20,18 @@ export const Login: React.FC = () => {
     e.preventDefault();
     setError('');
     
-    const success = await login(email, password);
-    if (!success) {
-      setError('Invalid credentials. Please check your email and password.');
+    try {
+      await login(email, password);
+    } catch (error: any) {
+      const errorMessage = error.message || 'An error occurred during login';
+      
+      if (errorMessage.includes('Email not confirmed')) {
+        setError('Please check your email and click the confirmation link to verify your account before signing in.');
+      } else if (errorMessage.includes('Invalid login credentials')) {
+        setError('Invalid email or password. Please check your credentials and try again.');
+      } else {
+        setError(errorMessage);
+      }
     }
   };
 
