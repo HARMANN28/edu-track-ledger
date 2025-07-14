@@ -27,8 +27,8 @@ export const Login: React.FC = () => {
       
       if (errorMessage.includes('Email not confirmed')) {
         setError('Please check your email and click the confirmation link to verify your account before signing in.');
-      } else if (errorMessage.includes('Invalid login credentials')) {
-        setError('Invalid email or password. Please check your credentials and try again.');
+      } else if (errorMessage.includes('Invalid login credentials') || errorMessage.includes('invalid_credentials')) {
+        setError('Invalid email or password. Please check your credentials and try again. If you just signed up, make sure your email is confirmed.');
       } else {
         setError(errorMessage);
       }
@@ -44,14 +44,18 @@ export const Login: React.FC = () => {
       return;
     }
     
-    const success = await signUp(email, password, name);
-    if (!success) {
-      setError('Failed to create account. Please try again.');
-    } else {
-      setError('');
-      setActiveTab('login');
-      // Show success message
-      setError('Account created successfully! Please sign in.');
+    try {
+      const success = await signUp(email, password, name);
+      if (!success) {
+        setError('Failed to create account. Please try again.');
+      } else {
+        setError('');
+        setActiveTab('login');
+        // Show success message
+        setError('Account created successfully! You can now sign in with your credentials.');
+      }
+    } catch (error: any) {
+      setError(error.message || 'Failed to create account. Please try again.');
     }
   };
 
