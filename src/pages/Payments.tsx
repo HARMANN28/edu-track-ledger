@@ -284,13 +284,36 @@ export const Payments: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="class">Class</Label>
-                  <Input
-                    id="class"
+                  <Select
                     value={formData.class}
-                    onChange={(e) => setFormData(prev => ({ ...prev, class: e.target.value }))}
-                    placeholder="e.g., 10-A"
-                    required
-                  />
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, class: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select class" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[...Array(12)].map((_, i) => (
+                        <SelectItem key={i + 1} value={`${i + 1}-A`}>
+                          Class {i + 1}-A
+                        </SelectItem>
+                      ))}
+                      {[...Array(12)].map((_, i) => (
+                        <SelectItem key={`${i + 1}-B`} value={`${i + 1}-B`}>
+                          Class {i + 1}-B
+                        </SelectItem>
+                      ))}
+                      {[...Array(12)].map((_, i) => (
+                        <SelectItem key={`${i + 1}-C`} value={`${i + 1}-C`}>
+                          Class {i + 1}-C
+                        </SelectItem>
+                      ))}
+                      {[...Array(12)].map((_, i) => (
+                        <SelectItem key={`${i + 1}-D`} value={`${i + 1}-D`}>
+                          Class {i + 1}-D
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 

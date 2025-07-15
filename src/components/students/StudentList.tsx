@@ -206,11 +206,11 @@ export const StudentList: React.FC = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Classes</SelectItem>
-                <SelectItem value="8">Class 8</SelectItem>
-                <SelectItem value="9">Class 9</SelectItem>
-                <SelectItem value="10">Class 10</SelectItem>
-                <SelectItem value="11">Class 11</SelectItem>
-                <SelectItem value="12">Class 12</SelectItem>
+                {[...Array(12)].map((_, i) => (
+                  <SelectItem key={i + 1} value={(i + 1).toString()}>
+                    Class {i + 1}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>

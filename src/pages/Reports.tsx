@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { useAuth } from '@/components/AuthProvider';
+import { useSupabase } from '@/hooks/useSupabase';
 
 
 export const Reports: React.FC = () => {
@@ -32,12 +33,143 @@ export const Reports: React.FC = () => {
   const [selectedClass, setSelectedClass] = useState('all');
   const [reportType, setReportType] = useState('overview');
   const { user } = useAuth();
+  const { getStudents, getPayments, loading } = useSupabase();
 
-  // Initialize with empty data - will be populated from actual database
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [classWiseData, setClassWiseData] = useState<any[]>([]);
   const [paymentMethodData, setPaymentMethodData] = useState<any[]>([]);
   const [defaultersData, setDefaultersData] = useState<any[]>([]);
+  const [students, setStudents] = useState<any[]>([]);
+  const [payments, setPayments] = useState<any[]>([]);
+
+  const fetchReportData = async () => {
+    try {
+      const [studentsData, paymentsData] = await Promise.all([
+        getStudents(),
+        getPayments()
+      ]);
+
+      setStudents(studentsData);
+      setPayments(paymentsData);
+
+      // Generate monthly data
+      const monthlyStats = generateMonthlyData(paymentsData);
+      setMonthlyData(monthlyStats);
+
+      // Generate class-wise data
+      const classStats = generateClassWiseData(studentsData, paymentsData);
+      setClassWiseData(classStats);
+
+      // Generate payment method data
+      const methodStats = generatePaymentMethodData(paymentsData);
+      setPaymentMethodData(methodStats);
+
+      // Generate defaulters data
+      const defaulters = generateDefaultersData(studentsData, paymentsData);
+      setDefaultersData(defaulters);
+    } catch (error) {
+      console.error('Error fetching report data:', error);
+    }
+  };
+
+  const generateMonthlyData = (paymentsData: any[]) => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+    return months.map(month => {
+      const monthPayments = paymentsData.filter(p => 
+        p.month && p.month.substring(0, 3) === month
+      );
+      
+      const collected = monthPayments
+        .filter(p => p.status === 'paid')
+        .reduce((sum, p) => sum + p.amount, 0);
+      
+      const pending = monthPayments
+        .filter(p => p.status === 'pending' || p.status === 'overdue')
+        .reduce((sum, p) => sum + p.amount, 0);
+
+      return { month, collected, pending };
+    });
+  };
+
+  const generateClassWiseData = (studentsData: any[], paymentsData: any[]) => {
+    const classGroups = studentsData.reduce((acc, student) => {
+      const className = student.class;
+      if (!acc[className]) {
+        acc[className] = [];
+      }
+      acc[className].push(student);
+      return acc;
+    }, {});
+
+    return Object.entries(classGroups).map(([className, classStudents]: [string, any[]]) => {
+      const studentIds = classStudents.map(s => s.id);
+      const classPayments = paymentsData.filter(p => 
+        studentIds.includes(p.student_id)
+      );
+
+      const collected = classPayments
+        .filter(p => p.status === 'paid')
+        .reduce((sum, p) => sum + p.amount, 0);
+      
+      const pending = classPayments
+        .filter(p => p.status === 'pending' || p.status === 'overdue')
+        .reduce((sum, p) => sum + p.amount, 0);
+
+      return {
+        class: className,
+        students: classStudents.length,
+        collected,
+        pending
+      };
+    });
+  };
+
+  const generatePaymentMethodData = (paymentsData: any[]) => {
+    const paidPayments = paymentsData.filter(p => p.status === 'paid');
+    const total = paidPayments.length;
+    
+    if (total === 0) return [];
+
+    const methods = ['cash', 'online', 'cheque', 'card'];
+    const colors = ['#FF8C00', '#8B0000', '#32CD32', '#4169E1'];
+
+    return methods.map((method, index) => {
+      const count = paidPayments.filter(p => p.payment_method === method).length;
+      const percentage = Math.round((count / total) * 100);
+      
+      return {
+        method: method.charAt(0).toUpperCase() + method.slice(1),
+        value: percentage,
+        color: colors[index]
+      };
+    }).filter(item => item.value > 0);
+  };
+
+  const generateDefaultersData = (studentsData: any[], paymentsData: any[]) => {
+    return studentsData.map(student => {
+      const studentPayments = paymentsData.filter(p => 
+        p.student_id === student.id && (p.status === 'pending' || p.status === 'overdue')
+      );
+      
+      if (studentPayments.length === 0) return null;
+
+      const totalPending = studentPayments.reduce((sum, p) => sum + p.amount, 0);
+      const monthsDue = studentPayments.length;
+
+      return {
+        id: student.id,
+        name: `${student.first_name} ${student.last_name}`,
+        class: `${student.class}-${student.section}`,
+        amount: totalPending,
+        months: monthsDue,
+        contact: student.father_contact
+      };
+    }).filter(Boolean);
+  };
+
+  React.useEffect(() => {
+    fetchReportData();
+  }, []);
 
   const totalCollected = monthlyData.reduce((sum, item) => sum + (item.collected || 0), 0);
   const totalPending = monthlyData.reduce((sum, item) => sum + (item.pending || 0), 0);
@@ -95,9 +227,9 @@ export const Reports: React.FC = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Classes</SelectItem>
-                {[...Array(12)].map((_, i) => (
-                  <SelectItem key={i + 1} value={(i + 1).toString()}>
-                    Class {i + 1}
+                {Array.from(new Set(students.map(s => s.class))).sort().map((className) => (
+                  <SelectItem key={className} value={className}>
+                    Class {className}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -150,7 +282,7 @@ export const Reports: React.FC = () => {
           <CardContent>
             <div className="text-2xl font-bold text-success">₹{totalCollected > 0 ? (totalCollected / 100000).toFixed(1) + 'L' : '0'}</div>
             <p className="text-xs text-muted-foreground">
-              No data available yet
+              {monthlyData.length > 0 ? 'This period' : 'No data available yet'}
             </p>
           </CardContent>
         </Card>
@@ -163,7 +295,7 @@ export const Reports: React.FC = () => {
           <CardContent>
             <div className="text-2xl font-bold text-warning">₹{totalPending > 0 ? (totalPending / 100000).toFixed(1) + 'L' : '0'}</div>
             <p className="text-xs text-muted-foreground">
-              No data available yet
+              {monthlyData.length > 0 ? 'Outstanding' : 'No data available yet'}
             </p>
           </CardContent>
         </Card>
@@ -176,7 +308,7 @@ export const Reports: React.FC = () => {
           <CardContent>
             <div className="text-2xl font-bold">{collectionRate.toFixed(1)}%</div>
             <p className="text-xs text-muted-foreground">
-              No data available yet
+              {monthlyData.length > 0 ? 'Overall rate' : 'No data available yet'}
             </p>
           </CardContent>
         </Card>
@@ -187,9 +319,9 @@ export const Reports: React.FC = () => {
             <Users className="h-4 w-4 text-secondary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{students.length}</div>
             <p className="text-xs text-muted-foreground">
-              No students added yet
+              {students.length > 0 ? 'Total enrolled' : 'No students added yet'}
             </p>
           </CardContent>
         </Card>
@@ -300,20 +432,20 @@ export const Reports: React.FC = () => {
                         </TableCell>
                         <TableCell>{item.students}</TableCell>
                         <TableCell className="text-success font-medium">
-                          ₹{(item.collected / 100000).toFixed(1)}L
+                          ₹{item.collected.toLocaleString()}
                         </TableCell>
                         <TableCell className="text-warning font-medium">
-                          ₹{(item.pending / 100000).toFixed(1)}L
+                          ₹{item.pending.toLocaleString()}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <div className="w-16 bg-muted rounded-full h-2">
                               <div 
                                 className="bg-primary h-2 rounded-full" 
-                                style={{ width: `${rate}%` }}
+                                style={{ width: `${isNaN(rate) ? 0 : rate}%` }}
                               />
                             </div>
-                            <span className="text-sm font-medium">{rate.toFixed(1)}%</span>
+                            <span className="text-sm font-medium">{isNaN(rate) ? '0.0' : rate.toFixed(1)}%</span>
                           </div>
                         </TableCell>
                       </TableRow>

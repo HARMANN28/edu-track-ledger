@@ -83,9 +83,10 @@ export const Dashboard: React.FC = () => {
       // Calculate stats from real data
       const activeStudents = studentsData.filter(s => s.status === 'active').length;
       const thisMonthPayments = paymentsData.filter(p => {
-        const paymentDate = new Date(p.payment_date);
+        const paymentDate = p.payment_date ? new Date(p.payment_date) : null;
         const now = new Date();
-        return paymentDate.getMonth() === now.getMonth() && 
+        return paymentDate && 
+               paymentDate.getMonth() === now.getMonth() && 
                paymentDate.getFullYear() === now.getFullYear() &&
                p.status === 'paid';
       });
@@ -95,9 +96,11 @@ export const Dashboard: React.FC = () => {
       const pendingAmount = pendingPayments.reduce((sum, p) => sum + p.amount, 0);
       
       const todayPayments = paymentsData.filter(p => {
-        const paymentDate = new Date(p.payment_date);
+        const paymentDate = p.payment_date ? new Date(p.payment_date) : null;
         const today = new Date();
-        return paymentDate.toDateString() === today.toDateString() && p.status === 'paid';
+        return paymentDate && 
+               paymentDate.toDateString() === today.toDateString() && 
+               p.status === 'paid';
       });
       const todayAmount = todayPayments.reduce((sum, p) => sum + p.amount, 0);
 
@@ -142,14 +145,15 @@ export const Dashboard: React.FC = () => {
 
       // Set recent payments (last 5)
       const recent = paymentsData
-        .sort((a, b) => new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime())
+        .filter(p => p.payment_date) // Only include payments with dates
+        .sort((a, b) => new Date(b.payment_date || 0).getTime() - new Date(a.payment_date || 0).getTime())
         .slice(0, 5)
         .map(p => ({
           id: p.id,
           student: p.student_name,
           class: p.class,
           amount: `₹${p.amount.toLocaleString()}`,
-          time: new Date(p.payment_date).toLocaleDateString(),
+          time: p.payment_date ? new Date(p.payment_date).toLocaleDateString() : 'Pending',
           status: p.status
         }));
       
