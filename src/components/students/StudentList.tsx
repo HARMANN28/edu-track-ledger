@@ -39,6 +39,7 @@ import {
 import type { Student } from '@/types';
 import { useSupabase } from '@/hooks/useSupabase';
 import { StudentForm } from './StudentForm';
+import { StudentProfile } from './StudentProfile';
 
 const getStatusBadge = (status: Student['status']) => {
   switch (status) {
@@ -78,6 +79,8 @@ export const StudentList: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const { getStudents, deleteStudent, loading } = useSupabase();
 
   const fetchStudents = async () => {
@@ -129,6 +132,12 @@ export const StudentList: React.FC = () => {
   const handleEdit = (student: Student) => {
     setEditingStudent(student);
     setIsFormOpen(true);
+    setIsProfileOpen(false);
+  };
+
+  const handleViewProfile = (student: Student) => {
+    setSelectedStudent(student);
+    setIsProfileOpen(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -285,7 +294,7 @@ export const StudentList: React.FC = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleViewProfile(student)}>
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </DropdownMenuItem>
@@ -343,6 +352,13 @@ export const StudentList: React.FC = () => {
         onClose={handleFormClose}
         student={editingStudent}
         onSuccess={handleFormSuccess}
+      />
+
+      <StudentProfile
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+        student={selectedStudent}
+        onEdit={handleEdit}
       />
     </div>
   );

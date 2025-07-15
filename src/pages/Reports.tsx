@@ -31,6 +31,7 @@ import { useSupabase } from '@/hooks/useSupabase';
 export const Reports: React.FC = () => {
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
   const [selectedClass, setSelectedClass] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const [reportType, setReportType] = useState('overview');
   const { user } = useAuth();
   const { getStudents, getPayments, loading } = useSupabase();
@@ -92,7 +93,20 @@ export const Reports: React.FC = () => {
   };
 
   const generateClassWiseData = (studentsData: any[], paymentsData: any[]) => {
-    const classGroups = studentsData.reduce((acc, student) => {
+    // Filter students first based on search and class filter
+    const filteredStudents = studentsData.filter(student => {
+      const matchesSearch = searchTerm === '' || 
+        student.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.admission_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        `${student.first_name} ${student.last_name}`.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesClass = selectedClass === 'all' || student.class === selectedClass;
+      
+      return matchesSearch && matchesClass;
+    });
+
+    const classGroups = filteredStudents.reduce((acc, student) => {
       const className = student.class;
       if (!acc[className]) {
         acc[className] = [];
@@ -146,7 +160,20 @@ export const Reports: React.FC = () => {
   };
 
   const generateDefaultersData = (studentsData: any[], paymentsData: any[]) => {
-    return studentsData.map(student => {
+    // Filter students first based on search and class filter
+    const filteredStudents = studentsData.filter(student => {
+      const matchesSearch = searchTerm === '' || 
+        student.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.admission_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        `${student.first_name} ${student.last_name}`.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesClass = selectedClass === 'all' || student.class === selectedClass;
+      
+      return matchesSearch && matchesClass;
+    });
+
+    return filteredStudents.map(student => {
       const studentPayments = paymentsData.filter(p => 
         p.student_id === student.id && (p.status === 'pending' || p.status === 'overdue')
       );
@@ -169,11 +196,44 @@ export const Reports: React.FC = () => {
 
   React.useEffect(() => {
     fetchReportData();
-  }, []);
+  }, [searchTerm, selectedClass]); // Re-fetch when filters change
 
-  const totalCollected = monthlyData.reduce((sum, item) => sum + (item.collected || 0), 0);
-  const totalPending = monthlyData.reduce((sum, item) => sum + (item.pending || 0), 0);
+  // Filter payments based on student filters
+  const getFilteredPayments = () => {
+    if (searchTerm === '' && selectedClass === 'all') {
+      return payments;
+    }
+
+    const filteredStudentIds = students.filter(student => {
+      const matchesSearch = searchTerm === '' || 
+        student.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.admission_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        `${student.first_name} ${student.last_name}`.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesClass = selectedClass === 'all' || student.class === selectedClass;
+      
+      return matchesSearch && matchesClass;
+    }).map(s => s.id);
+
+    return payments.filter(p => filteredStudentIds.includes(p.student_id));
+  };
+
+  const filteredPayments = getFilteredPayments();
+  const totalCollected = filteredPayments.filter(p => p.status === 'paid').reduce((sum, p) => sum + p.amount, 0);
+  const totalPending = filteredPayments.filter(p => p.status === 'pending' || p.status === 'overdue').reduce((sum, p) => sum + p.amount, 0);
   const collectionRate = totalCollected + totalPending > 0 ? (totalCollected / (totalCollected + totalPending)) * 100 : 0;
+  const filteredStudentCount = students.filter(student => {
+    const matchesSearch = searchTerm === '' || 
+      student.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.admission_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      `${student.first_name} ${student.last_name}`.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesClass = selectedClass === 'all' || student.class === selectedClass;
+    
+    return matchesSearch && matchesClass;
+  }).length;
 
   return (
     <div className="space-y-6">
@@ -208,7 +268,17 @@ export const Reports: React.FC = () => {
           <CardTitle>Report Filters</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search students..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            
             <Select value={reportType} onValueChange={setReportType}>
               <SelectTrigger>
                 <SelectValue placeholder="Report Type" />
@@ -319,9 +389,9 @@ export const Reports: React.FC = () => {
             <Users className="h-4 w-4 text-secondary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{students.length}</div>
+            <div className="text-2xl font-bold">{filteredStudentCount}</div>
             <p className="text-xs text-muted-foreground">
-              {students.length > 0 ? 'Total enrolled' : 'No students added yet'}
+              {searchTerm || selectedClass !== 'all' ? 'Filtered results' : 'Total enrolled'}
             </p>
           </CardContent>
         </Card>
@@ -338,8 +408,8 @@ export const Reports: React.FC = () => {
             {monthlyData.length > 0 ? (
               <ChartContainer
                 config={{
-                  collected: { label: "Collected", color: "#FF8C00" },
-                  pending: { label: "Pending", color: "#8B0000" },
+                  collected: { label: "Collected", color: "hsl(var(--success))" },
+                  pending: { label: "Pending", color: "hsl(var(--warning))" },
                 }}
                 className="h-[300px]"
               >
@@ -349,8 +419,8 @@ export const Reports: React.FC = () => {
                     <XAxis dataKey="month" />
                     <YAxis />
                     <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="collected" fill="#FF8C00" />
-                    <Bar dataKey="pending" fill="#8B0000" />
+                    <Bar dataKey="collected" fill="hsl(var(--success))" />
+                    <Bar dataKey="pending" fill="hsl(var(--warning))" />
                   </BarChart>
                 </ResponsiveContainer>
               </ChartContainer>
@@ -372,7 +442,7 @@ export const Reports: React.FC = () => {
             {paymentMethodData.length > 0 ? (
               <ChartContainer
                 config={{
-                  value: { label: "Percentage", color: "#FF8C00" },
+                  value: { label: "Percentage", color: "hsl(var(--primary))" },
                 }}
                 className="h-[300px]"
               >
@@ -469,7 +539,7 @@ export const Reports: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-destructive" />
-            Fee Defaulters
+            Fee Defaulters {searchTerm || selectedClass !== 'all' ? '(Filtered)' : ''}
           </CardTitle>
           <CardDescription>Students with pending fee payments</CardDescription>
         </CardHeader>
