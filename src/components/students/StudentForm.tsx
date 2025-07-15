@@ -285,21 +285,39 @@ export const StudentForm: React.FC<StudentFormProps> = ({
             <div className="grid grid-cols-4 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="class">Class</Label>
-                <Input
-                  id="class"
+                <Select
                   value={formData.class}
-                  onChange={(e) => setFormData(prev => ({ ...prev, class: e.target.value }))}
-                  required
-                />
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, class: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select class" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[...Array(12)].map((_, i) => (
+                      <SelectItem key={i + 1} value={(i + 1).toString()}>
+                        Class {i + 1}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="section">Section</Label>
-                <Input
-                  id="section"
+                <Select
                   value={formData.section}
-                  onChange={(e) => setFormData(prev => ({ ...prev, section: e.target.value }))}
-                  required
-                />
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, section: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select section" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {['A', 'B', 'C', 'D'].map((section) => (
+                      <SelectItem key={section} value={section}>
+                        Section {section}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="roll_number">Roll Number</Label>
