@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -19,20 +20,22 @@ import {
 } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Download, FileText, TrendingUp, Users, DollarSign, AlertTriangle } from 'lucide-react';
+import { CalendarIcon, Download, FileText, TrendingUp, Users, DollarSign, AlertTriangle, Search, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { useAuth } from '@/components/AuthProvider';
 import { useSupabase } from '@/hooks/useSupabase';
-
+import { StudentProfile } from '@/components/students/StudentProfile';
 
 export const Reports: React.FC = () => {
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
   const [selectedClass, setSelectedClass] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [reportType, setReportType] = useState('overview');
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [isStudentProfileOpen, setIsStudentProfileOpen] = useState(false);
   const { user } = useAuth();
   const { getStudents, getPayments, loading } = useSupabase();
 
@@ -42,6 +45,7 @@ export const Reports: React.FC = () => {
   const [defaultersData, setDefaultersData] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
+  const [filteredStudents, setFilteredStudents] = useState<any[]>([]);
 
   const fetchReportData = async () => {
     try {
@@ -50,7 +54,44 @@ export const Reports: React.FC = () => {
         getPayments()
       ]);
 
-      setStudents(studentsData);
+      // Transform students data
+      const transformedStudents = studentsData.map((student: any) => ({
+        id: student.id,
+        admissionNumber: student.admission_number,
+        firstName: student.first_name,
+        middleName: student.middle_name,
+        lastName: student.last_name,
+        dateOfBirth: student.date_of_birth,
+        gender: student.gender,
+        class: student.class,
+        section: student.section,
+        rollNumber: student.roll_number,
+        dateOfAdmission: student.date_of_admission,
+        academicYear: student.academic_year,
+        fatherName: student.father_name,
+        fatherOccupation: student.father_occupation,
+        fatherContact: student.father_contact,
+        fatherEmail: student.father_email,
+        motherName: student.mother_name,
+        motherOccupation: student.mother_occupation,
+        motherContact: student.mother_contact,
+        motherEmail: student.mother_email,
+        guardianName: student.guardian_name,
+        guardianRelationship: student.guardian_relationship,
+        guardianContact: student.guardian_contact,
+        permanentAddress: student.permanent_address,
+        currentAddress: student.current_address,
+        city: student.city,
+        state: student.state,
+        pinCode: student.pin_code,
+        country: student.country,
+        discountType: student.discount_type,
+        discountPercentage: student.discount_percentage,
+        discountValidityPeriod: student.discount_validity_period,
+        status: student.status,
+      }));
+
+      setStudents(transformedStudents);
       setPayments(paymentsData);
 
       // Generate monthly data
@@ -58,7 +99,7 @@ export const Reports: React.FC = () => {
       setMonthlyData(monthlyStats);
 
       // Generate class-wise data
-      const classStats = generateClassWiseData(studentsData, paymentsData);
+      const classStats = generateClassWiseData(transformedStudents, paymentsData);
       setClassWiseData(classStats);
 
       // Generate payment method data
@@ -66,7 +107,7 @@ export const Reports: React.FC = () => {
       setPaymentMethodData(methodStats);
 
       // Generate defaulters data
-      const defaulters = generateDefaultersData(studentsData, paymentsData);
+      const defaulters = generateDefaultersData(transformedStudents, paymentsData);
       setDefaultersData(defaulters);
     } catch (error) {
       console.error('Error fetching report data:', error);
@@ -93,13 +134,12 @@ export const Reports: React.FC = () => {
   };
 
   const generateClassWiseData = (studentsData: any[], paymentsData: any[]) => {
-    // Filter students first based on search and class filter
     const filteredStudents = studentsData.filter(student => {
       const matchesSearch = searchTerm === '' || 
-        student.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.admission_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        `${student.first_name} ${student.last_name}`.toLowerCase().includes(searchTerm.toLowerCase());
+        student.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.admissionNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        `${student.firstName} ${student.lastName}`.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesClass = selectedClass === 'all' || student.class === selectedClass;
       
@@ -160,13 +200,12 @@ export const Reports: React.FC = () => {
   };
 
   const generateDefaultersData = (studentsData: any[], paymentsData: any[]) => {
-    // Filter students first based on search and class filter
     const filteredStudents = studentsData.filter(student => {
       const matchesSearch = searchTerm === '' || 
-        student.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.admission_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        `${student.first_name} ${student.last_name}`.toLowerCase().includes(searchTerm.toLowerCase());
+        student.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.admissionNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        `${student.firstName} ${student.lastName}`.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesClass = selectedClass === 'all' || student.class === selectedClass;
       
@@ -185,18 +224,45 @@ export const Reports: React.FC = () => {
 
       return {
         id: student.id,
-        name: `${student.first_name} ${student.last_name}`,
+        student: student,
+        name: `${student.firstName} ${student.lastName}`,
         class: `${student.class}-${student.section}`,
         amount: totalPending,
         months: monthsDue,
-        contact: student.father_contact
+        contact: student.fatherContact
       };
     }).filter(Boolean);
   };
 
+  // Filter students based on search and class
+  useEffect(() => {
+    const filtered = students.filter(student => {
+      const matchesSearch = searchTerm === '' || 
+        student.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.admissionNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        `${student.firstName} ${student.lastName}`.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesClass = selectedClass === 'all' || student.class === selectedClass;
+      
+      return matchesSearch && matchesClass;
+    });
+    setFilteredStudents(filtered);
+  }, [students, searchTerm, selectedClass]);
+
   React.useEffect(() => {
     fetchReportData();
-  }, [searchTerm, selectedClass]); // Re-fetch when filters change
+  }, [searchTerm, selectedClass]);
+
+  const handleStudentClick = (student: any) => {
+    setSelectedStudent(student);
+    setIsStudentProfileOpen(true);
+  };
+
+  const handleStudentEdit = (student: any) => {
+    // This would typically open an edit form
+    console.log('Edit student:', student);
+  };
 
   // Filter payments based on student filters
   const getFilteredPayments = () => {
@@ -204,18 +270,7 @@ export const Reports: React.FC = () => {
       return payments;
     }
 
-    const filteredStudentIds = students.filter(student => {
-      const matchesSearch = searchTerm === '' || 
-        student.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.admission_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        `${student.first_name} ${student.last_name}`.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesClass = selectedClass === 'all' || student.class === selectedClass;
-      
-      return matchesSearch && matchesClass;
-    }).map(s => s.id);
-
+    const filteredStudentIds = filteredStudents.map(s => s.id);
     return payments.filter(p => filteredStudentIds.includes(p.student_id));
   };
 
@@ -223,17 +278,6 @@ export const Reports: React.FC = () => {
   const totalCollected = filteredPayments.filter(p => p.status === 'paid').reduce((sum, p) => sum + p.amount, 0);
   const totalPending = filteredPayments.filter(p => p.status === 'pending' || p.status === 'overdue').reduce((sum, p) => sum + p.amount, 0);
   const collectionRate = totalCollected + totalPending > 0 ? (totalCollected / (totalCollected + totalPending)) * 100 : 0;
-  const filteredStudentCount = students.filter(student => {
-    const matchesSearch = searchTerm === '' || 
-      student.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.admission_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      `${student.first_name} ${student.last_name}`.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesClass = selectedClass === 'all' || student.class === selectedClass;
-    
-    return matchesSearch && matchesClass;
-  }).length;
 
   return (
     <div className="space-y-6">
@@ -288,6 +332,7 @@ export const Reports: React.FC = () => {
                 <SelectItem value="collection">Collection Report</SelectItem>
                 <SelectItem value="defaulters">Defaulters Report</SelectItem>
                 <SelectItem value="class-wise">Class-wise Report</SelectItem>
+                <SelectItem value="student-wise">Student-wise Report</SelectItem>
               </SelectContent>
             </Select>
             
@@ -389,7 +434,7 @@ export const Reports: React.FC = () => {
             <Users className="h-4 w-4 text-secondary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{filteredStudentCount}</div>
+            <div className="text-2xl font-bold">{filteredStudents.length}</div>
             <p className="text-xs text-muted-foreground">
               {searchTerm || selectedClass !== 'all' ? 'Filtered results' : 'Total enrolled'}
             </p>
@@ -397,199 +442,308 @@ export const Reports: React.FC = () => {
         </Card>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Monthly Collection Chart */}
+      {/* Student-wise Report */}
+      {reportType === 'student-wise' && (
         <Card>
           <CardHeader>
-            <CardTitle>Monthly Collection Trend</CardTitle>
-            <CardDescription>Fee collection vs pending amounts over time</CardDescription>
+            <CardTitle>Student-wise Fee Report</CardTitle>
+            <CardDescription>Individual student fee details and payment history</CardDescription>
           </CardHeader>
           <CardContent>
-            {monthlyData.length > 0 ? (
-              <ChartContainer
-                config={{
-                  collected: { label: "Collected", color: "hsl(var(--success))" },
-                  pending: { label: "Pending", color: "hsl(var(--warning))" },
-                }}
-                className="h-[300px]"
-              >
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={monthlyData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="collected" fill="hsl(var(--success))" />
-                    <Bar dataKey="pending" fill="hsl(var(--warning))" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            ) : (
-              <div className="h-[300px] flex items-center justify-center">
-                <p className="text-muted-foreground">No data available for chart</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Payment Method Distribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Payment Method Distribution</CardTitle>
-            <CardDescription>Breakdown of payment methods used</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {paymentMethodData.length > 0 ? (
-              <ChartContainer
-                config={{
-                  value: { label: "Percentage", color: "hsl(var(--primary))" },
-                }}
-                className="h-[300px]"
-              >
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={paymentMethodData}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      dataKey="value"
-                      label={({ method, value }) => `${method}: ${value}%`}
-                    >
-                      {paymentMethodData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <ChartTooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            ) : (
-              <div className="h-[300px] flex items-center justify-center">
-                <p className="text-muted-foreground">No payment data available for chart</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Class-wise Performance */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Class-wise Fee Collection</CardTitle>
-          <CardDescription>Collection performance by class</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Class</TableHead>
-                  <TableHead>Students</TableHead>
-                  <TableHead>Collected</TableHead>
-                  <TableHead>Pending</TableHead>
-                  <TableHead>Collection Rate</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {classWiseData.length > 0 ? (
-                  classWiseData.map((item) => {
-                    const rate = (item.collected / (item.collected + item.pending)) * 100;
-                    return (
-                      <TableRow key={item.class}>
-                        <TableCell>
-                          <Badge variant="outline">Class {item.class}</Badge>
-                        </TableCell>
-                        <TableCell>{item.students}</TableCell>
-                        <TableCell className="text-success font-medium">
-                          ₹{item.collected.toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-warning font-medium">
-                          ₹{item.pending.toLocaleString()}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div className="w-16 bg-muted rounded-full h-2">
-                              <div 
-                                className="bg-primary h-2 rounded-full" 
-                                style={{ width: `${isNaN(rate) ? 0 : rate}%` }}
-                              />
-                            </div>
-                            <span className="text-sm font-medium">{isNaN(rate) ? '0.0' : rate.toFixed(1)}%</span>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8">
-                      <p className="text-muted-foreground">No class data available yet.</p>
-                    </TableCell>
+                    <TableHead>Admission No.</TableHead>
+                    <TableHead>Student Name</TableHead>
+                    <TableHead>Class</TableHead>
+                    <TableHead>Total Paid</TableHead>
+                    <TableHead>Total Pending</TableHead>
+                    <TableHead>Last Payment</TableHead>
+                    <TableHead>Action</TableHead>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+                </TableHeader>
+                <TableBody>
+                  {filteredStudents.length > 0 ? (
+                    filteredStudents.map((student) => {
+                      const studentPayments = payments.filter(p => p.student_id === student.id);
+                      const totalPaid = studentPayments.filter(p => p.status === 'paid').reduce((sum, p) => sum + p.amount, 0);
+                      const totalPending = studentPayments.filter(p => p.status === 'pending' || p.status === 'overdue').reduce((sum, p) => sum + p.amount, 0);
+                      const lastPayment = studentPayments
+                        .filter(p => p.payment_date)
+                        .sort((a, b) => new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime())[0];
 
-      {/* Defaulters Report */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-destructive" />
-            Fee Defaulters {searchTerm || selectedClass !== 'all' ? '(Filtered)' : ''}
-          </CardTitle>
-          <CardDescription>Students with pending fee payments</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Student Name</TableHead>
-                  <TableHead>Class</TableHead>
-                  <TableHead>Pending Amount</TableHead>
-                  <TableHead>Months Due</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {defaultersData.length > 0 ? (
-                  defaultersData.map((defaulter) => (
-                    <TableRow key={defaulter.id}>
-                      <TableCell className="font-medium">{defaulter.name}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{defaulter.class}</Badge>
-                      </TableCell>
-                      <TableCell className="text-destructive font-medium">
-                        ₹{defaulter.amount.toLocaleString()}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="destructive">{defaulter.months} months</Badge>
-                      </TableCell>
-                      <TableCell className="text-sm">{defaulter.contact}</TableCell>
-                      <TableCell>
-                        <Button variant="outline" size="sm">
-                          Send Notice
-                        </Button>
+                      return (
+                        <TableRow key={student.id}>
+                          <TableCell className="font-medium">{student.admissionNumber}</TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{student.firstName} {student.lastName}</p>
+                              <p className="text-sm text-muted-foreground">Roll: {student.rollNumber}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{student.class}-{student.section}</Badge>
+                          </TableCell>
+                          <TableCell className="text-success font-medium">
+                            ₹{totalPaid.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-warning font-medium">
+                            ₹{totalPending.toLocaleString()}
+                          </TableCell>
+                          <TableCell>
+                            {lastPayment ? format(new Date(lastPayment.payment_date), 'dd MMM yyyy') : 'No payments'}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleStudentClick(student)}
+                              className="gap-2"
+                            >
+                              <Eye className="h-4 w-4" />
+                              View Profile
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8">
+                        <p className="text-muted-foreground">No students found matching your criteria.</p>
                       </TableCell>
                     </TableRow>
-                  ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {reportType !== 'student-wise' && (
+        <>
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Monthly Collection Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Monthly Collection Trend</CardTitle>
+                <CardDescription>Fee collection vs pending amounts over time</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {monthlyData.length > 0 ? (
+                  <ChartContainer
+                    config={{
+                      collected: { label: "Collected", color: "hsl(var(--success))" },
+                      pending: { label: "Pending", color: "hsl(var(--warning))" },
+                    }}
+                    className="h-[300px]"
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={monthlyData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" />
+                        <YAxis />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Bar dataKey="collected" fill="hsl(var(--success))" />
+                        <Bar dataKey="pending" fill="hsl(var(--warning))" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
                 ) : (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
-                      <p className="text-muted-foreground">No defaulters found.</p>
-                    </TableCell>
-                  </TableRow>
+                  <div className="h-[300px] flex items-center justify-center">
+                    <p className="text-muted-foreground">No data available for chart</p>
+                  </div>
                 )}
-              </TableBody>
-            </Table>
+              </CardContent>
+            </Card>
+
+            {/* Payment Method Distribution */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Payment Method Distribution</CardTitle>
+                <CardDescription>Breakdown of payment methods used</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {paymentMethodData.length > 0 ? (
+                  <ChartContainer
+                    config={{
+                      value: { label: "Percentage", color: "hsl(var(--primary))" },
+                    }}
+                    className="h-[300px]"
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={paymentMethodData}
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={80}
+                          dataKey="value"
+                          label={({ method, value }) => `${method}: ${value}%`}
+                        >
+                          {paymentMethodData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <ChartTooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
+                ) : (
+                  <div className="h-[300px] flex items-center justify-center">
+                    <p className="text-muted-foreground">No payment data available for chart</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
+
+          {/* Class-wise Performance */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Class-wise Fee Collection</CardTitle>
+              <CardDescription>Collection performance by class</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Class</TableHead>
+                      <TableHead>Students</TableHead>
+                      <TableHead>Collected</TableHead>
+                      <TableHead>Pending</TableHead>
+                      <TableHead>Collection Rate</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {classWiseData.length > 0 ? (
+                      classWiseData.map((item) => {
+                        const rate = (item.collected / (item.collected + item.pending)) * 100;
+                        return (
+                          <TableRow key={item.class}>
+                            <TableCell>
+                              <Badge variant="outline">Class {item.class}</Badge>
+                            </TableCell>
+                            <TableCell>{item.students}</TableCell>
+                            <TableCell className="text-success font-medium">
+                              ₹{item.collected.toLocaleString()}
+                            </TableCell>
+                            <TableCell className="text-warning font-medium">
+                              ₹{item.pending.toLocaleString()}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <div className="w-16 bg-muted rounded-full h-2">
+                                  <div 
+                                    className="bg-primary h-2 rounded-full" 
+                                    style={{ width: `${isNaN(rate) ? 0 : rate}%` }}
+                                  />
+                                </div>
+                                <span className="text-sm font-medium">{isNaN(rate) ? '0.0' : rate.toFixed(1)}%</span>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-8">
+                          <p className="text-muted-foreground">No class data available yet.</p>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Defaulters Report */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+                Fee Defaulters {searchTerm || selectedClass !== 'all' ? '(Filtered)' : ''}
+              </CardTitle>
+              <CardDescription>Students with pending fee payments</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Student Name</TableHead>
+                      <TableHead>Class</TableHead>
+                      <TableHead>Pending Amount</TableHead>
+                      <TableHead>Months Due</TableHead>
+                      <TableHead>Contact</TableHead>
+                      <TableHead>Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {defaultersData.length > 0 ? (
+                      defaultersData.map((defaulter) => (
+                        <TableRow key={defaulter.id}>
+                          <TableCell className="font-medium">
+                            <button
+                              onClick={() => handleStudentClick(defaulter.student)}
+                              className="text-left hover:text-primary transition-colors"
+                            >
+                              {defaulter.name}
+                            </button>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{defaulter.class}</Badge>
+                          </TableCell>
+                          <TableCell className="text-destructive font-medium">
+                            ₹{defaulter.amount.toLocaleString()}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="destructive">{defaulter.months} months</Badge>
+                          </TableCell>
+                          <TableCell className="text-sm">{defaulter.contact}</TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleStudentClick(defaulter.student)}
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                View
+                              </Button>
+                              <Button variant="outline" size="sm">
+                                Send Notice
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8">
+                          <p className="text-muted-foreground">No defaulters found.</p>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
+
+      {/* Student Profile Modal */}
+      <StudentProfile
+        isOpen={isStudentProfileOpen}
+        onClose={() => setIsStudentProfileOpen(false)}
+        student={selectedStudent}
+        onEdit={handleStudentEdit}
+      />
     </div>
   );
 };
