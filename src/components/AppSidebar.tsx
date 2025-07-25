@@ -23,6 +23,7 @@ import {
   UserCheck,
 } from 'lucide-react';
 import { useAuth } from './AuthProvider';
+import { useRBAC } from '@/hooks/useRBAC';
 
 const adminItems = [
   { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
@@ -49,9 +50,28 @@ export const AppSidebar: React.FC = () => {
   const { state } = useSidebar();
   const location = useLocation();
   const { user } = useAuth();
+  const { canRead } = useRBAC();
   const currentPath = location.pathname;
 
-  let items = adminItems;
+  // Filter navigation items based on user permissions
+  const getFilteredItems = () => {
+    const allItems = [
+      { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard, resource: 'dashboard' },
+      { title: 'Students', url: '/students', icon: Users, resource: 'students' },
+      { title: 'Fee Structure', url: '/fee-structure', icon: DollarSign, resource: 'fee-structure' },
+      { title: 'Payments', url: '/payments', icon: CreditCard, resource: 'payments' },
+      { title: 'Reports', url: '/reports', icon: TrendingUp, resource: 'reports' },
+      { title: 'Users', url: '/users', icon: Users, resource: 'users' },
+      { title: 'Settings', url: '/settings', icon: Settings, resource: 'settings' },
+    ];
+
+    return allItems.filter(item => {
+      if (item.resource === 'dashboard') return true; // Everyone can see dashboard
+      return canRead(item.resource);
+    });
+  };
+
+  const items = getFilteredItems();
   const isCollapsed = state === 'collapsed';
 
   const getNavCls = ({ isActive }: { isActive: boolean }) =>

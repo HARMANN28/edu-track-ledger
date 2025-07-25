@@ -29,6 +29,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieCha
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useAuth } from '@/components/AuthProvider';
 import { useSupabase } from '@/hooks/useSupabase';
+import { useRBAC } from '@/hooks/useRBAC';
 import { StudentProfile } from '@/components/students/StudentProfile';
 
 export const Reports: React.FC = () => {
@@ -46,6 +47,7 @@ export const Reports: React.FC = () => {
   const [selectedClassForExport, setSelectedClassForExport] = useState('');
   const { user } = useAuth();
   const { getStudents, getPayments, loading } = useSupabase();
+  const { canRead } = useRBAC();
 
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [classWiseData, setClassWiseData] = useState<any[]>([]);
@@ -367,10 +369,10 @@ export const Reports: React.FC = () => {
         </Dialog>
       </div>
 
-      {user?.role === 'staff' && (
+      {user?.role !== 'admin' && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p className="text-sm text-blue-800">
-            <strong>Staff Access:</strong> You have view and export access to reports. Contact an administrator for data modifications.
+            <strong>Limited Access:</strong> You have view and export access to reports. Contact an administrator for data modifications.
           </p>
         </div>
       )}

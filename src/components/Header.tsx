@@ -12,9 +12,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { User, Settings, LogOut } from 'lucide-react';
 import { useAuth } from './AuthProvider';
+import { useRBAC } from '@/hooks/useRBAC';
 
 export const Header: React.FC = () => {
   const { user, logout } = useAuth();
+  const { userRole } = useRBAC();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -40,9 +42,9 @@ export const Header: React.FC = () => {
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{user?.name}</p>
+                  <p className="text-sm font-medium leading-none">{user?.email}</p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    {user?.email}
+                    Role: {userRole?.charAt(0).toUpperCase() + userRole?.slice(1)}
                   </p>
                   
                 </div>

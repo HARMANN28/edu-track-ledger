@@ -27,26 +27,24 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/components/AuthProvider';
+import { useRBAC } from '@/hooks/useRBAC';
+import { PermissionGuard } from '@/components/PermissionGuard';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
 
 export const Settings: React.FC = () => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { canRead, canUpdate } = useRBAC();
 
-  if (user?.role === 'staff') {
+  if (!canRead('settings')) {
     return (
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Settings</h1>
           <p className="text-muted-foreground">Application settings and preferences</p>
         </div>
-        <Alert>
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            You don't have permission to access settings. This feature is only available for administrators.
-          </AlertDescription>
-        </Alert>
+        <PermissionGuard resource="settings" action="read" showAlert={true} />
       </div>
     );
   }
@@ -232,9 +230,11 @@ export const Settings: React.FC = () => {
                 </div>
               </div>
 
-              <Button onClick={() => handleSave('School')}>
-                Save School Settings
-              </Button>
+              <PermissionGuard resource="settings" action="update">
+                <Button onClick={() => handleSave('School')}>
+                  Save School Settings
+                </Button>
+              </PermissionGuard>
             </CardContent>
           </Card>
         </TabsContent>
@@ -359,9 +359,11 @@ export const Settings: React.FC = () => {
                 </div>
               </div>
 
-              <Button onClick={() => handleSave('Notification')}>
-                Save Notification Settings
-              </Button>
+              <PermissionGuard resource="settings" action="update">
+                <Button onClick={() => handleSave('Notification')}>
+                  Save Notification Settings
+                </Button>
+              </PermissionGuard>
             </CardContent>
           </Card>
         </TabsContent>
@@ -425,9 +427,11 @@ export const Settings: React.FC = () => {
                 </div>
               </div>
 
-              <Button onClick={() => handleSave('Security')}>
-                Save Security Settings
-              </Button>
+              <PermissionGuard resource="settings" action="update">
+                <Button onClick={() => handleSave('Security')}>
+                  Save Security Settings
+                </Button>
+              </PermissionGuard>
             </CardContent>
           </Card>
         </TabsContent>
@@ -502,9 +506,11 @@ export const Settings: React.FC = () => {
                 />
               </div>
 
-              <Button onClick={() => handleSave('Payment')}>
-                Save Payment Settings
-              </Button>
+              <PermissionGuard resource="settings" action="update">
+                <Button onClick={() => handleSave('Payment')}>
+                  Save Payment Settings
+                </Button>
+              </PermissionGuard>
             </CardContent>
           </Card>
         </TabsContent>
@@ -572,9 +578,11 @@ export const Settings: React.FC = () => {
                 </Select>
               </div>
 
-              <Button onClick={() => handleSave('Backup')}>
-                Save Backup Settings
-              </Button>
+              <PermissionGuard resource="settings" action="update">
+                <Button onClick={() => handleSave('Backup')}>
+                  Save Backup Settings
+                </Button>
+              </PermissionGuard>
             </CardContent>
           </Card>
         </TabsContent>

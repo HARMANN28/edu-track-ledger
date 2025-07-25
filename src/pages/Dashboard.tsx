@@ -14,6 +14,7 @@ import {
   ArrowUpRight,
 } from 'lucide-react';
 import { useSupabase } from '@/hooks/useSupabase';
+import { useRBAC } from '@/hooks/useRBAC';
 
 
 const getStatusBadge = (status: string) => {
@@ -31,6 +32,7 @@ const getStatusBadge = (status: string) => {
 
 export const Dashboard: React.FC = () => {
   const { getStudents, getPayments, loading } = useSupabase();
+  const { userRole } = useRBAC();
   
   const [stats, setStats] = React.useState([
     {
@@ -167,11 +169,25 @@ export const Dashboard: React.FC = () => {
     fetchDashboardData();
   }, []);
 
+  // Show role-specific welcome message
+  const getRoleMessage = () => {
+    switch (userRole) {
+      case 'admin':
+        return 'You have full administrative access to all features.';
+      case 'accountant':
+        return 'You can view all sections and manage payments.';
+      case 'teacher':
+        return 'You can view all sections and add new payments.';
+      default:
+        return 'Welcome to the fees management system.';
+    }
+  };
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
         <p className="text-muted-foreground">Overview of your fees management system</p>
+        <p className="text-sm text-primary mt-1">{getRoleMessage()}</p>
       </div>
 
       {/* Stats Cards */}

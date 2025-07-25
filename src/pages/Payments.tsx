@@ -52,6 +52,8 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useSupabase } from '@/hooks/useSupabase';
 import { useAuth } from '@/components/AuthProvider';
+import { useRBAC } from '@/hooks/useRBAC';
+import { PermissionGuard } from '@/components/PermissionGuard';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
 
@@ -125,6 +127,7 @@ export const Payments: React.FC = () => {
   const [dueDate, setDueDate] = useState<Date>();
   const { getPayments, createPayment, updatePayment, deletePayment, getStudents, loading } = useSupabase();
   const { user } = useAuth();
+  const { canCreate, canUpdate, canDelete } = useRBAC();
 
 
   const [formData, setFormData] = useState({
@@ -265,7 +268,7 @@ export const Payments: React.FC = () => {
           <h1 className="text-3xl font-bold text-foreground">Payments</h1>
           <p className="text-muted-foreground">Manage fee payments and transactions</p>
         </div>
-        {(user?.role === 'admin' || user?.role === 'teacher') && (
+        <PermissionGuard resource="payments" action="create">
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2" onClick={resetForm}>
@@ -536,7 +539,7 @@ export const Payments: React.FC = () => {
               </form>
             </DialogContent>
           </Dialog>
-        )}
+        </PermissionGuard>
       </div>
 
       {/* Summary Cards */}
@@ -690,42 +693,42 @@ export const Payments: React.FC = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          {user?.role === 'admin' && (
-                            <>
-                              <DropdownMenuItem onClick={() => handleEdit(payment)}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit Payment
-                              </DropdownMenuItem>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <DropdownMenuItem
-                                    className="text-destructive"
-                                    onSelect={(e) => e.preventDefault()}
+                          <PermissionGuard resource="payments" action="update">
+                            <DropdownMenuItem onClick={() => handleEdit(payment)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit Payment
+                            </DropdownMenuItem>
+                          </PermissionGuard>
+                          <PermissionGuard resource="payments" action="delete">
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onSelect={(e) => e.preventDefault()}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete the payment record.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDelete(payment.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                   >
-                                    <Trash2 className="mr-2 h-4 w-4" />
                                     Delete
-                                  </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      This action cannot be undone. This will permanently delete the payment record.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => handleDelete(payment.id)}
-                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                    >
-                                      Delete
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </>
-                          )}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </PermissionGuard>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

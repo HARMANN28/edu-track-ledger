@@ -30,6 +30,8 @@ import {
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { useSupabase } from '@/hooks/useSupabase';
+import { useRBAC } from '@/hooks/useRBAC';
+import { PermissionGuard } from '@/components/PermissionGuard';
 
 interface User {
   id: string;
@@ -44,6 +46,7 @@ export const StaffUsers: React.FC = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const { user: currentUser } = useAuth();
   const { getUsers, createUser, updateUser, deleteUser, loading } = useSupabase();
+  const { canRead, canCreate, canUpdate, canDelete } = useRBAC();
   const [formData, setFormData] = useState<Partial<User & { password?: string }>>({
     full_name: '',
     email: '',
@@ -60,7 +63,17 @@ export const StaffUsers: React.FC = () => {
     fetchUsers();
   }, []);
 
-  if (!currentUser) return null;
+  if (!canRead('users')) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">User Management</h1>
+          <p className="text-muted-foreground">Manage staff and user accounts.</p>
+        </div>
+        <PermissionGuard resource="users" action="read" showAlert={true} />
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,14 +120,14 @@ export const StaffUsers: React.FC = () => {
           <h1 className="text-3xl font-bold text-foreground">User Management</h1>
           <p className="text-muted-foreground">Manage staff and user accounts.</p>
         </div>
-        {/* Temporarily remove role check for admin features */}
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2" onClick={() => { setEditingUser(null); setFormData({ full_name: '', email: '', password: '', role: 'teacher' }); }}>
-              <Plus className="h-4 w-4" />
-              Add User
-            </Button>
-          </DialogTrigger>
+        <PermissionGuard resource="users" action="create">
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2" onClick={() => { setEditingUser(null); setFormData({ full_name: '', email: '', password: '', role: 'teacher' }); }}>
+                <Plus className="h-4 w-4" />
+                Add User
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>{editingUser ? 'Edit User' : 'Add New User'}</DialogTitle>
@@ -156,7 +169,8 @@ export const StaffUsers: React.FC = () => {
               </DialogFooter>
             </form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </PermissionGuard>
       </div>
       <Card>
         <CardHeader>
@@ -170,8 +184,7 @@ export const StaffUsers: React.FC = () => {
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
-                {/* Temporarily remove role check for admin actions */}
-                <TableHead className="w-24"></TableHead>
+                <TableHead className="w-24">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -180,15 +193,18 @@ export const StaffUsers: React.FC = () => {
                   <TableCell>{u.full_name}</TableCell>
                   <TableCell>{u.email}</TableCell>
                   <TableCell>{u.role}</TableCell>
-                  {/* Temporarily remove role check for admin actions */}
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="icon" onClick={() => handleEdit(u)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="destructive" size="icon" onClick={() => handleDelete(u.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <PermissionGuard resource="users" action="update">
+                        <Button variant="outline" size="icon" onClick={() => handleEdit(u)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </PermissionGuard>
+                      <PermissionGuard resource="users" action="delete">
+                        <Button variant="destructive" size="icon" onClick={() => handleDelete(u.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </PermissionGuard>
                     </div>
                   </TableCell>
                 </TableRow>

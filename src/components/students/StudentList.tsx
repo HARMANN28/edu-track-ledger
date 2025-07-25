@@ -39,6 +39,8 @@ import {
 import type { Student } from '@/types';
 import { useSupabase } from '@/hooks/useSupabase';
 import { useAuth } from '@/components/AuthProvider';
+import { useRBAC } from '@/hooks/useRBAC';
+import { PermissionGuard } from '@/components/PermissionGuard';
 import { StudentForm } from './StudentForm';
 import { StudentProfile } from './StudentProfile';
 
@@ -84,6 +86,7 @@ export const StudentList: React.FC = () => {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const { getStudents, deleteStudent, loading } = useSupabase();
   const { user } = useAuth();
+  const { canCreate, canUpdate, canDelete } = useRBAC();
 
   const fetchStudents = async () => {
     const data = await getStudents();
@@ -171,10 +174,12 @@ export const StudentList: React.FC = () => {
           <h1 className="text-3xl font-bold text-foreground">Students</h1>
           <p className="text-muted-foreground">Manage student records and information</p>
         </div>
-        <Button className="gap-2" onClick={() => setIsFormOpen(true)}>
+        <PermissionGuard resource="students" action="create">
+          <Button className="gap-2" onClick={() => setIsFormOpen(true)}>
             <Plus className="h-4 w-4" />
             Add Student
           </Button>
+        </PermissionGuard>
       </div>
 
       <Card>
@@ -278,38 +283,42 @@ export const StudentList: React.FC = () => {
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEdit(student)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit Student
-                          </DropdownMenuItem>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <DropdownMenuItem
-                                className="text-destructive"
-                                onSelect={(e) => e.preventDefault()}
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This action cannot be undone. This will permanently delete the student record.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDelete(student.id)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          <PermissionGuard resource="students" action="update">
+                            <DropdownMenuItem onClick={() => handleEdit(student)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit Student
+                            </DropdownMenuItem>
+                          </PermissionGuard>
+                          <PermissionGuard resource="students" action="delete">
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onSelect={(e) => e.preventDefault()}
                                 >
+                                  <Trash2 className="mr-2 h-4 w-4" />
                                   Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                                </DropdownMenuItem>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete the student record.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDelete(student.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </PermissionGuard>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

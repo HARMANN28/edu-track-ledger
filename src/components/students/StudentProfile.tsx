@@ -34,6 +34,8 @@ import {
 import { format } from 'date-fns';
 import type { Student } from '@/types';
 import { useSupabase } from '@/hooks/useSupabase';
+import { useRBAC } from '@/hooks/useRBAC';
+import { PermissionGuard } from '@/components/PermissionGuard';
 
 interface StudentProfileProps {
   isOpen: boolean;
@@ -97,6 +99,7 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
   const [payments, setPayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const { getPayments } = useSupabase();
+  const { canUpdate } = useRBAC();
 
   const fetchStudentPayments = async () => {
     if (!student) return;
@@ -140,10 +143,12 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
             </div>
             <div className="flex items-center gap-2">
               {getStatusBadge(student.status)}
-              <Button variant="outline" size="sm" onClick={() => onEdit(student)}>
-                <Edit className="h-4 w-4 mr-2" />
-                Edit
-              </Button>
+              <PermissionGuard resource="students" action="update">
+                <Button variant="outline" size="sm" onClick={() => onEdit(student)}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+              </PermissionGuard>
               <Button variant="ghost" size="sm" onClick={onClose}>
                 <X className="h-4 w-4" />
               </Button>

@@ -42,6 +42,8 @@ import {
 import { Plus, Edit, Trash2, DollarSign } from 'lucide-react';
 import { useSupabase } from '@/hooks/useSupabase';
 import { useAuth } from '@/components/AuthProvider';
+import { useRBAC } from '@/hooks/useRBAC';
+import { PermissionGuard } from '@/components/PermissionGuard';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
 
@@ -61,20 +63,16 @@ export const FeeStructure: React.FC = () => {
   const [editingStructure, setEditingStructure] = useState<FeeStructure | null>(null);
   const { getFeeStructures, createFeeStructure, updateFeeStructure, deleteFeeStructure, loading } = useSupabase();
   const { user } = useAuth();
+  const { canRead, canCreate, canUpdate, canDelete } = useRBAC();
 
-  if (user?.role === 'staff') {
+  if (!canRead('fee-structure')) {
     return (
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Fee Structure</h1>
           <p className="text-muted-foreground">Fee structures for different classes</p>
         </div>
-        <Alert>
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            You don't have permission to access fee structure management. This feature is only available for administrators.
-          </AlertDescription>
-        </Alert>
+        <PermissionGuard resource="fee-structure" action="read" showAlert={true} />
       </div>
     );
   }
@@ -219,13 +217,14 @@ export const FeeStructure: React.FC = () => {
           <h1 className="text-3xl font-bold text-foreground">Fee Structure</h1>
           <p className="text-muted-foreground">Manage fee structures for different classes</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2" onClick={resetForm}>
-              <Plus className="h-4 w-4" />
-              Add Fee Structure
-            </Button>
-          </DialogTrigger>
+        <PermissionGuard resource="fee-structure" action="create">
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2" onClick={resetForm}>
+                <Plus className="h-4 w-4" />
+                Add Fee Structure
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
@@ -455,7 +454,8 @@ export const FeeStructure: React.FC = () => {
               </DialogFooter>
             </form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </PermissionGuard>
       </div>
 
       <Card>
@@ -505,37 +505,41 @@ export const FeeStructure: React.FC = () => {
                     <TableCell>{structure.late_fee_percentage}%</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEdit(structure)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete the fee structure.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDelete(structure.id)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                        <PermissionGuard resource="fee-structure" action="update">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEdit(structure)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </PermissionGuard>
+                        <PermissionGuard resource="fee-structure" action="delete">
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This action cannot be undone. This will permanently delete the fee structure.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDelete(structure.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </PermissionGuard>
                       </div>
                     </TableCell>
                   </TableRow>
